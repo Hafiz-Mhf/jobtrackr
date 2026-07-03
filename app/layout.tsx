@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { MotionConfig } from "framer-motion";
 import { Toaster } from "@/components/ui/sonner";
 import "./globals.css";
 
@@ -29,8 +30,10 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
-        {children}
-        <Toaster position="bottom-right" duration={4000} />
+        <MotionConfig reducedMotion="user">
+          {children}
+          <Toaster position="bottom-right" duration={4000} />
+        </MotionConfig>
       </body>
     </html>
   );
