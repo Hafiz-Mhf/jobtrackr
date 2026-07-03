@@ -100,7 +100,7 @@ export function ProfileForm({ profile, email }: Props) {
     <form onSubmit={handleSave} className="space-y-6 max-w-md">
       <div className="flex items-center gap-4">
         <Avatar.Root className="size-16 rounded-full overflow-hidden bg-accent-light flex items-center justify-center text-accent font-semibold text-xl">
-          <Avatar.Image src={avatarUrl} alt="" className="size-full object-cover" />
+          {avatarUrl && <Avatar.Image src={avatarUrl} alt="" className="size-full object-cover" />}
           <Avatar.Fallback>{initials}</Avatar.Fallback>
         </Avatar.Root>
         <label className="text-sm font-medium text-accent cursor-pointer">
@@ -116,8 +116,9 @@ export function ProfileForm({ profile, email }: Props) {
       </div>
 
       <div className="space-y-1">
-        <label className="text-sm font-medium text-brand-text">Name</label>
+        <label htmlFor="profile-name" className="text-sm font-medium text-brand-text">Name</label>
         <input
+          id="profile-name"
           type="text"
           value={fullName}
           onChange={(e) => setFullName(e.target.value)}
@@ -126,8 +127,9 @@ export function ProfileForm({ profile, email }: Props) {
       </div>
 
       <div className="space-y-1">
-        <label className="text-sm font-medium text-brand-text">Email</label>
+        <label htmlFor="profile-email" className="text-sm font-medium text-brand-text">Email</label>
         <input
+          id="profile-email"
           type="email"
           value={email}
           disabled
