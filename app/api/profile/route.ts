@@ -83,11 +83,14 @@ export async function DELETE() {
     const admin = createAdminClient()
 
     // Best-effort avatar cleanup — account deletion must not fail if this fails.
-    await admin.storage.from('avatars').remove([
+    const { error: storageError } = await admin.storage.from('avatars').remove([
       `${user.id}/avatar.jpg`,
       `${user.id}/avatar.png`,
       `${user.id}/avatar.webp`,
     ])
+    if (storageError) {
+      console.error('[profile]', storageError)
+    }
 
     const { error } = await admin.auth.admin.deleteUser(user.id)
     if (error) {
