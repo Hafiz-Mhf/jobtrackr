@@ -57,7 +57,7 @@ export function JobsProvider({ children }: { children: React.ReactNode }) {
   }, [])
 
   useEffect(() => {
-    refresh()
+    void Promise.resolve().then(refresh)
   }, [refresh])
 
   const createJob = useCallback(async (values: Partial<JobFormValues>): Promise<Job> => {
