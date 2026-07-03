@@ -3,8 +3,16 @@
 import { DndContext, DragEndEvent, PointerSensor, useSensor, useSensors } from '@dnd-kit/core'
 import { useJobs } from '@/hooks/useJobs'
 import { JOB_STATUSES } from '@/lib/constants'
-import type { JobStatus } from '@/types'
+import type { Job, JobStatus } from '@/types'
 import { Column } from './Column'
+
+function resolveTargetStatus(overId: string, jobs: Job[]): JobStatus | null {
+  if (JOB_STATUSES.includes(overId as JobStatus)) {
+    return overId as JobStatus
+  }
+  const overJob = jobs.find((j) => j.id === overId)
+  return overJob ? overJob.status : null
+}
 
 export function Board() {
   const { jobs, loading, error, updateJobStatus } = useJobs()
@@ -15,9 +23,9 @@ export function Board() {
     if (!over) return
 
     const jobId = active.id as string
-    const targetStatus = over.id as JobStatus
+    const targetStatus = resolveTargetStatus(over.id as string, jobs)
     const job = jobs.find((j) => j.id === jobId)
-    if (!job || job.status === targetStatus || !JOB_STATUSES.includes(targetStatus)) return
+    if (!job || !targetStatus || job.status === targetStatus) return
 
     updateJobStatus(jobId, targetStatus).catch(() => {
       // useJobs already reverts optimistic state on failure; surface via toast in Task 27
