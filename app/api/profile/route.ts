@@ -10,7 +10,8 @@ interface PatchProfileData {
 }
 
 function validatePatchInput(
-  body: unknown
+  body: unknown,
+  userId: string
 ): { valid: true; data: PatchProfileData } | { valid: false; error: string } {
   if (typeof body !== 'object' || body === null) {
     return { valid: false, error: 'Invalid request body.' }
@@ -23,8 +24,16 @@ function validatePatchInput(
       return { valid: false, error: nameError }
     }
   }
-  if (b.avatar_url !== undefined && typeof b.avatar_url !== 'string') {
-    return { valid: false, error: 'Invalid avatar URL.' }
+  if (b.avatar_url !== undefined) {
+    if (typeof b.avatar_url !== 'string') {
+      return { valid: false, error: 'Invalid avatar URL.' }
+    }
+    // Sanity-check the URL server-side: it must be a real Supabase Storage
+    // public URL scoped to this user's own avatars folder, not an arbitrary string.
+    const expectedPrefix = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/avatars/${userId}/`
+    if (!b.avatar_url.startsWith(expectedPrefix)) {
+      return { valid: false, error: 'Invalid avatar URL.' }
+    }
   }
 
   // Allowlisted update — only these fields (plus a server-set timestamp) ever reach the DB.
@@ -48,7 +57,7 @@ export async function PATCH(req: NextRequest) {
     }
 
     const body = await req.json()
-    const validation = validatePatchInput(body)
+    const validation = validatePatchInput(body, user.id)
     if (!validation.valid) {
       return NextResponse.json({ error: validation.error }, { status: 400 })
     }
