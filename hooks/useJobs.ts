@@ -1,8 +1,10 @@
 'use client'
 
 import { useCallback, useEffect, useState } from 'react'
+import { toast } from 'sonner'
 import type { Job, JobStatus } from '@/types'
 import type { JobFormValues } from '@/components/jobs/JobForm'
+import { STATUS_LABELS } from '@/lib/constants'
 
 interface JobsListResponse {
   data: Job[]
@@ -58,6 +60,7 @@ export function useJobs() {
     const json = (await res.json()) as JobResponse
     if (!res.ok) throw new Error(json.error)
     setJobs((prev) => [json.data, ...prev])
+    toast.success(`Job saved — ${json.data.company} · ${json.data.role}`)
     return json.data
   }, [])
 
@@ -74,8 +77,10 @@ export function useJobs() {
     })
     if (!res.ok) {
       setJobs(previous)
+      toast.error("Couldn't update status.", { duration: Infinity })
       throw new Error("Couldn't update status.")
     }
+    toast.success(`Moved to ${STATUS_LABELS[status]}`)
   }, [])
 
   const updateJob = useCallback(async (id: string, values: Partial<JobFormValues>): Promise<Job> => {
@@ -103,6 +108,7 @@ export function useJobs() {
     const res = await fetch(`/api/jobs/${id}`, { method: 'DELETE' })
     if (!res.ok) {
       setJobs(previous)
+      toast.error("Couldn't delete job.", { duration: Infinity })
       throw new Error("Couldn't delete job.")
     }
   }, [])

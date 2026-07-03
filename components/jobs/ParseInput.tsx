@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { motion } from 'framer-motion'
+import { toast } from 'sonner'
 import { useParser } from '@/hooks/useParser'
 import { stagger, fadeUp } from '@/lib/animations'
 import type { ParsedJob } from '@/types'
@@ -17,7 +18,22 @@ export function ParseInput({ onParsed, onManual }: Props) {
 
   function handleExtract() {
     const parsed = parse(text)
-    if (parsed) onParsed(parsed)
+    if (!parsed) return
+    const fieldsFound = [
+      parsed.company !== 'Unknown Company',
+      Boolean(parsed.role),
+      Boolean(parsed.salary_range),
+      Boolean(parsed.location),
+      parsed.tags.length > 0,
+    ].filter(Boolean).length
+    if (fieldsFound >= 4) {
+      toast.success('Details extracted — review and confirm')
+    } else if (fieldsFound > 0) {
+      toast.warning("Some fields couldn't be detected — fill them in below")
+    } else {
+      toast.error("Couldn't extract details. Fill in the fields manually.", { duration: Infinity })
+    }
+    onParsed(parsed)
   }
 
   const fields = result
