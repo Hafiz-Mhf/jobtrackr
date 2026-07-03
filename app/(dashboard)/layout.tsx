@@ -12,13 +12,19 @@ export default async function DashboardLayout({ children }: { children: React.Re
     redirect('/login')
   }
 
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('*')
+    .eq('id', user!.id)
+    .single()
+
   return (
     <div className="flex">
       <div className="hidden md:block">
         <SidebarWithReminders />
       </div>
       <div className="flex-1 flex flex-col min-h-screen min-w-0">
-        <Topbar />
+        <Topbar profile={profile} email={user!.email ?? ''} />
         <main className="flex-1 overflow-y-auto pb-16 md:pb-0">{children}</main>
       </div>
       <MobileNav />
