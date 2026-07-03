@@ -10,6 +10,7 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null)
   const [info, setInfo] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
+  const [consentChecked, setConsentChecked] = useState(false)
 
   const supabase = createClient()
 
@@ -20,6 +21,11 @@ export default function LoginPage() {
     setLoading(true)
 
     if (mode === 'sign-up') {
+      if (!consentChecked) {
+        setLoading(false)
+        setError('Please agree to the Privacy Policy to create an account.')
+        return
+      }
       const { error } = await supabase.auth.signUp({
         email,
         password,
@@ -77,6 +83,13 @@ export default function LoginPage() {
         >
           Continue with Google
         </button>
+        <p className="text-xs text-brand-muted text-center mb-4">
+          By continuing you agree to our{' '}
+          <a href="/privacy" target="_blank" className="text-accent underline">
+            Privacy Policy
+          </a>
+          .
+        </p>
 
         <form onSubmit={handleEmailAuth} className="space-y-3">
           <input
@@ -96,11 +109,28 @@ export default function LoginPage() {
             onChange={(e) => setPassword(e.target.value)}
             className="w-full border border-[var(--color-border)] rounded-md px-3 py-2 text-sm"
           />
+          {mode === 'sign-up' && (
+            <label className="flex items-start gap-2 text-xs text-brand-muted">
+              <input
+                type="checkbox"
+                checked={consentChecked}
+                onChange={(e) => setConsentChecked(e.target.checked)}
+                className="mt-0.5"
+              />
+              <span>
+                I agree to the{' '}
+                <a href="/privacy" target="_blank" className="text-accent underline">
+                  Privacy Policy
+                </a>
+                .
+              </span>
+            </label>
+          )}
           {error && <p className="text-sm text-[var(--color-rejected)]">{error}</p>}
           {info && <p className="text-sm text-[var(--color-offer)]">{info}</p>}
           <button
             type="submit"
-            disabled={loading}
+            disabled={loading || (mode === 'sign-up' && !consentChecked)}
             className="w-full bg-accent text-white rounded-md py-2 text-sm font-semibold disabled:opacity-60"
           >
             {mode === 'sign-in' ? 'Sign in' : 'Sign up'}
