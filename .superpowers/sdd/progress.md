@@ -30,3 +30,4 @@ Task 23: complete (commits dfb1846..f3c2ff7, review clean; layout.tsx auth guard
 Task 24: complete (commits f3c2ff7..508c77f, review clean; shadcn toast deprecated in registry, substituted sonner (justified), formatDate restored after shadcn init clobbered it, design tokens verified intact, radius-token name collision fixed proactively)
 Task 25: complete (commits 508c77f..a72a646, review clean; found+fixed real bug — Framer Motion staggered reveals didn't respect prefers-reduced-motion, CSS media query only stopped aurora; fixed with MotionConfig)
 Task 26: GitHub push done (github.com/Hafiz-Mhf/jobtrackr, private, main branch, 33 commits) — Vercel deploy paused per user instruction, awaiting go-ahead
+Task 26: complete — Vercel deployed (hafiz-mhfs-projects/jobtrackr), custom domain jobtrackr.hafizfaruqi.my live via CNAME, git author fixed (was blocking deploy), root / redirects to /login, scaffold metadata replaced. MVP code-complete.
