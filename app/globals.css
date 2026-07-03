@@ -1,26 +1,71 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
 @import "tailwindcss";
+@config "../tailwind.config.ts";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+  --color-bg:            #F8F7FF;
+  --color-surface:       #FFFFFF;
+  --color-surface-muted: #F3F2FA;
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+  --color-accent:        #5B4EE8;
+  --color-accent-light:  #EEECFD;
+  --color-accent-hover:  #4A3ED4;
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --color-text-primary:  #1A1835;
+  --color-text-secondary:#6B6893;
+  --color-text-muted:    #A8A6C4;
+
+  --color-saved:         #6B7280;
+  --color-applied:       #3B82F6;
+  --color-interview:     #8B5CF6;
+  --color-offer:         #10B981;
+  --color-rejected:      #F43F5E;
+
+  --color-border:        #E8E6F5;
+  --color-border-focus:  #5B4EE8;
+  --color-shadow:        rgba(91, 78, 232, 0.08);
+
+  --aurora-1: rgba(91, 78, 232, 0.04);
+  --aurora-2: rgba(139, 92, 246, 0.03);
+  --aurora-3: rgba(56, 189, 248, 0.03);
+
+  --font-sans: 'Plus Jakarta Sans', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+
+  --sidebar-width: 240px;
+  --topbar-height: 60px;
+  --content-max: 1200px;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background-color: var(--color-bg);
+  color: var(--color-text-primary);
+  font-family: var(--font-sans);
+  position: relative;
+  overflow-x: hidden;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  background:
+    radial-gradient(ellipse 80% 60% at 20% 10%, var(--aurora-1), transparent),
+    radial-gradient(ellipse 60% 80% at 80% 90%, var(--aurora-2), transparent),
+    radial-gradient(ellipse 70% 50% at 50% 50%, var(--aurora-3), transparent);
+  animation: aurora-drift 18s ease-in-out infinite alternate;
+  pointer-events: none;
+}
+
+#__next, main, aside, header {
+  position: relative;
+  z-index: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
 }
