@@ -2,7 +2,19 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { JOB_STATUSES, MAX_FIELD_LENGTH, MAX_TEXT_LENGTH } from '@/lib/constants'
 
-function validateJobInput(body: unknown): { valid: true; data: Record<string, unknown> } | { valid: false; error: string } {
+interface InsertJobData {
+  company: string
+  role: string
+  url?: string
+  description?: string
+  status?: string
+  salary_range?: string
+  location?: string
+  tags?: string[]
+  notes?: string
+}
+
+function validateJobInput(body: unknown): { valid: true; data: InsertJobData } | { valid: false; error: string } {
   if (typeof body !== 'object' || body === null) {
     return { valid: false, error: 'Invalid request body.' }
   }
@@ -24,7 +36,35 @@ function validateJobInput(body: unknown): { valid: true; data: Record<string, un
     return { valid: false, error: 'Notes are too long.' }
   }
 
-  return { valid: true, data: b }
+  // Build allowlisted insert object — only these fields reach the DB
+  const insertData: InsertJobData = {
+    company: b.company.trim(),
+    role: b.role.trim(),
+  }
+
+  if (typeof b.url === 'string') {
+    insertData.url = b.url
+  }
+  if (typeof b.description === 'string') {
+    insertData.description = b.description
+  }
+  if (typeof b.status === 'string') {
+    insertData.status = b.status
+  }
+  if (typeof b.salary_range === 'string') {
+    insertData.salary_range = b.salary_range
+  }
+  if (typeof b.location === 'string') {
+    insertData.location = b.location
+  }
+  if (Array.isArray(b.tags)) {
+    insertData.tags = b.tags
+  }
+  if (typeof b.notes === 'string') {
+    insertData.notes = b.notes
+  }
+
+  return { valid: true, data: insertData }
 }
 
 export async function GET() {
