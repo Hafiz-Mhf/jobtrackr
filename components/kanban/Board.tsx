@@ -42,7 +42,7 @@ export function Board() {
 
   return (
     <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
-      <div className="flex gap-4 p-6 overflow-x-auto items-start min-h-[calc(100vh-var(--topbar-height))]">
+      <div className="grid grid-cols-5 gap-4 p-6 items-start min-h-[calc(100vh-var(--topbar-height))] min-w-225 overflow-x-auto">
         {JOB_STATUSES.map((status) => (
           <Column key={status} status={status} jobs={jobs.filter((j) => j.status === status)} />
         ))}

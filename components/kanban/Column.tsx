@@ -15,7 +15,7 @@ export function Column({ status, jobs }: Props) {
   const { setNodeRef } = useDroppable({ id: status })
 
   return (
-    <div ref={setNodeRef} className="min-w-[280px] max-w-[300px] bg-surface-muted border border-[var(--color-border)] rounded-lg p-4">
+    <div ref={setNodeRef} className="min-w-0 bg-surface-muted border border-[var(--color-border)] rounded-lg p-4">
       <div className="flex items-center justify-between mb-3 text-sm font-semibold text-brand-muted uppercase tracking-wide">
         <span>{STATUS_LABELS[status]}</span>
         <span>({jobs.length})</span>
