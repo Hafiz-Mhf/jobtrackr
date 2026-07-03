@@ -31,3 +31,11 @@ export interface InterviewQuestion {
   category: 'technical' | 'behavioral' | 'company' | 'rolefit'
   tip: string
 }
+
+export interface Profile {
+  id: string
+  full_name?: string
+  avatar_url?: string
+  created_at: string
+  updated_at: string
+}
