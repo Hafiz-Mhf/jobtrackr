@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { JOB_STATUSES, MAX_FIELD_LENGTH, MAX_TEXT_LENGTH } from '@/lib/constants'
+import { learnTags } from '@/lib/tags/learn'
 
 interface PatchJobData {
   company?: string
@@ -101,6 +102,8 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       console.error('[jobs/id]', error)
       return NextResponse.json({ error: 'Failed to update job.' }, { status: 500 })
     }
+
+    await learnTags(supabase, user.id, validation.data.tags ?? [])
 
     return NextResponse.json({ data })
   } catch (error) {

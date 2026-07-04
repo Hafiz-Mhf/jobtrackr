@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { JOB_STATUSES, MAX_FIELD_LENGTH, MAX_TEXT_LENGTH } from '@/lib/constants'
+import { learnTags } from '@/lib/tags/learn'
 
 interface InsertJobData {
   company: string
@@ -116,6 +117,8 @@ export async function POST(req: NextRequest) {
       console.error('[jobs]', error)
       return NextResponse.json({ error: 'Failed to save job.' }, { status: 500 })
     }
+
+    await learnTags(supabase, user.id, validation.data.tags ?? [])
 
     return NextResponse.json({ data })
   } catch (error) {
