@@ -52,7 +52,7 @@ export function ParseInput({ onParsed, onManual }: Props) {
         value={text}
         onChange={(e) => setText(e.target.value)}
         rows={8}
-        placeholder="Senior Frontend Engineer at Stripe..."
+        placeholder={'Senior Frontend Engineer at Stripe...\n\nPaste the full job description for best results — more text means better extraction.'}
         className="w-full border border-[var(--color-border)] rounded-md p-3 text-sm font-mono"
       />
       <div className="flex gap-3 mt-4">

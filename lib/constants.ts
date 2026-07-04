@@ -31,10 +31,13 @@ export const STATUS_ACCENT: Record<JobStatus, { border: string; dot: string }> =
 export const KNOWN_TAGS = [
   'React', 'Next.js', 'Vue', 'Angular', 'TypeScript', 'JavaScript',
   'Node.js', 'Express', 'Python', 'Django', 'FastAPI',
-  'PostgreSQL', 'MySQL', 'MongoDB', 'Redis', 'Supabase',
+  'PostgreSQL', 'MySQL', 'MongoDB', 'Redis', 'Supabase', 'SQL',
   'AWS', 'GCP', 'Azure', 'Docker', 'Kubernetes', 'CI/CD',
   'GraphQL', 'REST', 'Tailwind', 'CSS', 'HTML',
   'Git', 'Agile', 'Scrum', 'Figma', 'Remote',
+  // Non-engineering / business tooling & domains
+  'Excel', 'SAP', 'Power BI', 'ServiceNow', 'Audit', 'Compliance',
+  'ITAM', 'Jira', 'Tableau', 'VBA', 'SharePoint',
 ] as const
 
 export const STALE_DAYS = 7

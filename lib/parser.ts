@@ -12,19 +12,49 @@ export function parseJobDescription(text: string): ParsedJob {
   }
 }
 
+// Words that signal a line is a job title rather than a company or heading.
+const ROLE_KEYWORDS =
+  /\b(engineer|developer|architect|manager|analyst|consultant|designer|specialist|administrator|coordinator|scientist|technician|programmer|lead|director|intern|associate|recruiter|accountant|auditor)\b/i
+
+function nonEmptyLines(text: string): string[] {
+  return text.split('\n').map((l) => l.trim()).filter(Boolean)
+}
+
+function cleanRole(s: string): string {
+  // Take the first line and drop a trailing "at Company" / " - Location" / " | X" suffix.
+  return s.split('\n')[0].replace(/\s+(?:at|@|[-–|·])\s+.*$/i, '').trim()
+}
+
+function cleanValue(s: string): string {
+  return s.split('\n')[0].replace(/[.,;]\s*$/, '').trim()
+}
+
 function extractRole(text: string): string {
-  const lines = text.split('\n').slice(0, 5)
+  const lines = nonEmptyLines(text)
+
+  // 1. Explicit label: "Title:", "Job Title:", "Position:", "Role:"
+  const label = text.match(/^\s*(?:job\s*title|title|position|role)\s*[:\-]\s*(.+)$/im)
+  if (label?.[1]) return cleanRole(label[1])
+
+  // 2. Specific engineering/tech title patterns
   const titlePatterns = [
-    /(?:senior|junior|mid|lead|staff)?\s*(?:frontend|backend|fullstack|full.stack|software|web)\s*(?:engineer|developer|architect)/i,
-    /(?:react|node|python|java)\s*developer/i,
+    /(?:senior|junior|mid|lead|staff|principal)?\s*(?:frontend|backend|fullstack|full.stack|software|web|mobile|data|devops|cloud|ml|ai)\s*(?:engineer|developer|architect|scientist)/i,
+    /(?:react|node|python|java|golang|ruby|php|\.net)\s*developer/i,
   ]
-  for (const line of lines) {
+  for (const line of lines.slice(0, 6)) {
     for (const pattern of titlePatterns) {
       const match = line.match(pattern)
       if (match) return match[0].trim()
     }
   }
-  return lines[0]?.trim() ?? 'Unknown Role'
+
+  // 3. First short line that reads like a job title (contains a role keyword)
+  for (const line of lines.slice(0, 8)) {
+    if (line.length <= 60 && ROLE_KEYWORDS.test(line)) return cleanRole(line)
+  }
+
+  // 4. Fallback: first non-empty line
+  return lines[0] ?? 'Unknown Role'
 }
 
 function extractSalary(text: string): string | undefined {
@@ -33,19 +63,47 @@ function extractSalary(text: string): string | undefined {
 }
 
 function extractLocation(text: string): string | undefined {
+  // 1. Explicit label: "Location:", "Based in:", "Office:"
+  const label = text.match(/^\s*(?:location|based in|office|work location)\s*[:\-]\s*(.+)$/im)
+  if (label?.[1]) return cleanValue(label[1])
+
+  // 2. Work-mode keyword
   const remoteMatch = text.match(/\b(remote|hybrid|on.?site|in.?office)\b/i)
   if (remoteMatch) return remoteMatch[0]
-  const cityMatch = text.match(/\b([A-Z][a-z]+(?:,\s*[A-Z]{2})?)\b/)
-  return cityMatch?.[0]
+
+  // 3. "City, ST" / "City, Country" — require the comma so a bare capitalised word isn't mistaken for a place
+  const cityMatch = text.match(/\b([A-Z][a-z]+(?:\s[A-Z][a-z]+)*,\s*(?:[A-Z]{2,}|[A-Z][a-z]+))\b/)
+  return cityMatch?.[1]
 }
 
 function extractCompany(text: string): string {
-  const match = text.match(/(?:[Aa][Tt]|@|[Cc]ompany[:\s]+|[Ee]mployer[:\s]+)\s*([A-Z][A-Za-z0-9 &.,']+)/)
-  return match?.[1]?.trim() ?? 'Unknown Company'
+  // 1. Explicit label: "Company:", "Employer:", "Organization:"
+  const label = text.match(/^\s*(?:company|employer|organi[sz]ation)\s*[:\-]\s*(.+)$/im)
+  if (label?.[1]) return cleanValue(label[1])
+
+  // 2. "at <Company>" / "@ <Company>" — capture up to 4 capitalised words
+  const atMatch = text.match(/\b(?:at|@)\s+([A-Z][A-Za-z0-9&.'-]+(?:\s+[A-Z][A-Za-z0-9&.'-]+){0,3})/)
+  if (atMatch?.[1]) return cleanValue(atMatch[1])
+
+  // 3. First-line heuristic: a short, punctuation-free, non-title line is likely the company name
+  const first = nonEmptyLines(text)[0]
+  if (first && isLikelyCompany(first)) return first
+
+  return 'Unknown Company'
+}
+
+function isLikelyCompany(line: string): boolean {
+  if (/[.!?:]/.test(line)) return false
+  if (!/^[A-Z]/.test(line)) return false
+  const words = line.split(/\s+/)
+  if (words.length < 1 || words.length > 4) return false
+  if (ROLE_KEYWORDS.test(line)) return false
+  if (/^(about|overview|job|responsibilities|requirements|summary|description|apply)\b/i.test(line)) return false
+  return true
 }
 
 function extractTags(text: string): string[] {
-  return KNOWN_TAGS.filter(tag =>
-    new RegExp(`\\b${tag.replace('.', '\\.')}\\b`, 'i').test(text)
+  return KNOWN_TAGS.filter((tag) =>
+    new RegExp(`\\b${tag.replace(/[.+]/g, '\\$&')}\\b`, 'i').test(text)
   )
 }

@@ -19,7 +19,7 @@ export default function NewJobPage() {
   }
 
   return (
-    <div className="p-6 max-w-2xl space-y-6">
+    <div className="p-6 max-w-3xl mx-auto space-y-6">
       <h1 className="text-2xl font-semibold">Add a job</h1>
 
       {!showForm && (
@@ -34,7 +34,12 @@ export default function NewJobPage() {
 
       {showForm && (
         <div className="bg-surface border border-[var(--color-border)] rounded-xl p-6">
-          <JobForm initial={parsed ?? undefined} onSubmit={handleSubmit} submitLabel="Save job" />
+          <JobForm
+            initial={parsed ?? undefined}
+            onSubmit={handleSubmit}
+            submitLabel="Save job"
+            reveal={parsed !== null}
+          />
         </div>
       )}
     </div>
