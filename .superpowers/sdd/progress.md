@@ -49,3 +49,14 @@ Final whole-branch review: complete (range 00417ee..77b4f23, then fix eafb1d2). 
   - Important (fixed): PATCH /api/profile accepted arbitrary avatar_url strings with no server-side sanity check; now validated against the user's own Supabase Storage avatars path prefix (commit eafb1d2, re-reviewed clean).
   - Minor (not fixed, logged for later): .single() in export/PATCH routes 500s if a profile row is ever missing (page already has fallback; routes don't) — consider .maybeSingle(). Migration 0002 not idempotent for manual re-runs (fine under tracked migration runner). Redundant profile fetch (layout.tsx + profile/page.tsx each query it once per /profile visit) — negligible at this scale. Client-only consent gate for email signup is an accepted spec tradeoff, not a defect.
 ALL 12 TASKS + FINAL REVIEW COMPLETE. Profile/Logout/Privacy feature done.
+Task 5: complete (commits 606c2aa..958acf4, review clean, build clean, /api/tags route confirmed)
+Task 6: complete (commits 958acf4..abe29f1, review clean, build clean; learnTags wired after success check in POST + PATCH)
+Task 7: complete (commits abe29f1..33ae00e, 1 fix round — addLocal intra-batch dedup bug inherited from brief sample fixed with incremental seen set, plus exported TagsContext for convention; re-review clean, tsc+eslint clean)
+Task 8: complete (commits 33ae00e..603d1ab, review clean, 57/57 tests, build clean; controller live-verified end-to-end: learned Snowflake round-tripped — persisted on save via learnTags, dictionary tags correctly NOT learned, auto-extracted after reload; single GET /api/tags on load; test data cleaned up)
+Final whole-branch review: complete (range d053ad0..603d1ab, opus). Verdict: merge with fixes -> fixed (commit 6f53b1f, re-review clean, 59 tests).
+  - Important (FIXED): dictionary common-word false positives — bare 'Go','next','Word','Excel','Spring','SAP','REST' tagged ordinary prose. Fixed: dropped 'next' alias; case-sensitive match for ambiguous terms Go/REST/SAP/Word/Excel/Spring (compound aliases like 'spring boot','rest api' stay case-insensitive). Live-relevant regression on the headline feature.
+  - Minor (FIXED): jobs POST+PATCH now validate/cap the tags array (filter non-strings, trim, drop empties, cap 50 tags, cap each to MAX_FIELD_LENGTH; added MAX_TAGS=50).
+  - Minor (accepted): learnTags adds a SELECT+INSERT to the awaited save path (after job persisted, best-effort) — negligible latency at this scale.
+  - Minor (accepted, Task 1): .NET/C++/C# bare-symbol canonicals match only via aliases.
+  - Minor (accepted, Task 4): concurrent learnTags batch insert can fail wholesale on unique-conflict race — best-effort, never throws.
+ALL 8 TASKS + FINAL REVIEW COMPLETE. Scalable tags feature done (dictionary + per-user learned tags).
