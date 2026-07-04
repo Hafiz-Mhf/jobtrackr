@@ -28,9 +28,9 @@
   --color-border-focus:  #5B4EE8;
   --color-shadow:        rgba(91, 78, 232, 0.08);
 
-  --aurora-1: rgba(91, 78, 232, 0.04);
-  --aurora-2: rgba(139, 92, 246, 0.03);
-  --aurora-3: rgba(56, 189, 248, 0.03);
+  --aurora-1: rgba(91, 78, 232, 0.12);
+  --aurora-2: rgba(139, 92, 246, 0.10);
+  --aurora-3: rgba(56, 189, 248, 0.08);
 
   --font-sans: var(--font-plus-jakarta-sans), system-ui, sans-serif;
   --font-mono: var(--font-jetbrains-mono), 'Fira Code', monospace;
@@ -91,6 +91,15 @@ body::before {
     radial-gradient(ellipse 70% 50% at 50% 50%, var(--aurora-3), transparent);
   animation: aurora-drift 18s ease-in-out infinite alternate;
   pointer-events: none;
+}
+
+@keyframes aurora-drift {
+  0% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  100% {
+    transform: translate3d(-2%, -3%, 0) scale(1.12);
+  }
 }
 
 #__next, main, aside, header {
