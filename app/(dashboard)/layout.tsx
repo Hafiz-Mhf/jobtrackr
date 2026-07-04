@@ -4,6 +4,7 @@ import { Topbar } from '@/components/layout/Topbar'
 import { MobileNav } from '@/components/layout/MobileNav'
 import { SidebarWithReminders } from '@/components/layout/SidebarWithReminders'
 import { JobsProvider } from '@/contexts/JobsProvider'
+import { TagsProvider } from '@/contexts/TagsProvider'
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient()
@@ -21,16 +22,18 @@ export default async function DashboardLayout({ children }: { children: React.Re
 
   return (
     <JobsProvider>
-      <div className="flex">
-        <div className="hidden md:block">
-          <SidebarWithReminders />
+      <TagsProvider>
+        <div className="flex">
+          <div className="hidden md:block">
+            <SidebarWithReminders />
+          </div>
+          <div className="flex-1 flex flex-col min-h-screen min-w-0">
+            <Topbar profile={profile} email={user!.email ?? ''} />
+            <main className="flex-1 overflow-y-auto pb-16 md:pb-0">{children}</main>
+          </div>
+          <MobileNav />
         </div>
-        <div className="flex-1 flex flex-col min-h-screen min-w-0">
-          <Topbar profile={profile} email={user!.email ?? ''} />
-          <main className="flex-1 overflow-y-auto pb-16 md:pb-0">{children}</main>
-        </div>
-        <MobileNav />
-      </div>
+      </TagsProvider>
     </JobsProvider>
   )
 }

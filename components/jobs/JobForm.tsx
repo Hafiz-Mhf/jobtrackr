@@ -5,6 +5,7 @@ import { motion } from 'framer-motion'
 import type { Job, JobStatus, ParsedJob } from '@/types'
 import { JOB_STATUSES, STATUS_LABELS } from '@/lib/constants'
 import { stagger, fadeUp } from '@/lib/animations'
+import { useTags } from '@/contexts/TagsProvider'
 
 export interface JobFormValues {
   company: string
@@ -44,6 +45,7 @@ export function JobForm({ initial, onSubmit, submitLabel = 'Save job', reveal = 
   const [values, setValues] = useState<JobFormValues>(toDefaults(initial))
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const { addLocal } = useTags()
 
   function set<K extends keyof JobFormValues>(key: K, value: JobFormValues[K]) {
     setValues((v) => ({ ...v, [key]: value }))
@@ -59,6 +61,7 @@ export function JobForm({ initial, onSubmit, submitLabel = 'Save job', reveal = 
     setSaving(true)
     try {
       await onSubmit(values)
+      addLocal(values.tags.split(',').map((t) => t.trim()).filter(Boolean))
     } catch {
       setError('Could not save job. Try again.')
     } finally {

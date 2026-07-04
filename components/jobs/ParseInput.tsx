@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { toast } from 'sonner'
 import { useParser } from '@/hooks/useParser'
+import { useTags } from '@/contexts/TagsProvider'
 import { stagger, fadeUp } from '@/lib/animations'
 import type { ParsedJob } from '@/types'
 
@@ -15,9 +16,10 @@ interface Props {
 export function ParseInput({ onParsed, onManual }: Props) {
   const [text, setText] = useState('')
   const { result, parse } = useParser()
+  const { customTags } = useTags()
 
   function handleExtract() {
-    const parsed = parse(text)
+    const parsed = parse(text, customTags)
     if (!parsed) return
     const fieldsFound = [
       parsed.company !== 'Unknown Company',
