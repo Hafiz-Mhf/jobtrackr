@@ -86,4 +86,25 @@ describe('parseJobDescription', () => {
     const result = parseJobDescription('Must be proficient in Excel, SQL, Jira and Tableau.')
     expect(result.tags).toEqual(expect.arrayContaining(['Excel', 'SQL', 'Jira', 'Tableau']))
   })
+
+  it('merges user custom tags with dictionary tags', () => {
+    const result = parseJobDescription('Experience with React and Snowflake.', ['Snowflake'])
+    expect(result.tags).toEqual(expect.arrayContaining(['React', 'Snowflake']))
+  })
+
+  it('normalizes aliases to canonical in extracted tags', () => {
+    const result = parseJobDescription('We deploy on k8s with reactjs.')
+    expect(result.tags).toEqual(expect.arrayContaining(['Kubernetes', 'React']))
+    expect(result.tags).not.toContain('k8s')
+  })
+
+  it('deduplicates when a custom tag equals a dictionary alias', () => {
+    const result = parseJobDescription('Strong React and reactjs work.', ['React'])
+    expect(result.tags.filter((t) => t === 'React')).toHaveLength(1)
+  })
+
+  it('behaves like dictionary-only when no custom tags are given', () => {
+    const result = parseJobDescription('Must know react, TypeScript and Node.js well.')
+    expect(result.tags).toEqual(expect.arrayContaining(['React', 'TypeScript', 'Node.js']))
+  })
 })

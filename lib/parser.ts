@@ -1,13 +1,13 @@
 import type { ParsedJob } from '@/types'
-import { KNOWN_TAGS } from '@/lib/constants'
+import { matchDictionary, matchCustomTags, normalizeTag } from '@/lib/skills'
 
-export function parseJobDescription(text: string): ParsedJob {
+export function parseJobDescription(text: string, customTags: string[] = []): ParsedJob {
   return {
     company:      extractCompany(text),
     role:         extractRole(text),
     salary_range: extractSalary(text),
     location:     extractLocation(text),
-    tags:         extractTags(text),
+    tags:         extractTags(text, customTags),
     description:  text.trim(),
   }
 }
@@ -102,8 +102,7 @@ function isLikelyCompany(line: string): boolean {
   return true
 }
 
-function extractTags(text: string): string[] {
-  return KNOWN_TAGS.filter((tag) =>
-    new RegExp(`\\b${tag.replace(/[.+]/g, '\\$&')}\\b`, 'i').test(text)
-  )
+function extractTags(text: string, customTags: string[] = []): string[] {
+  const merged = [...matchDictionary(text), ...matchCustomTags(text, customTags)].map(normalizeTag)
+  return [...new Set(merged)]
 }
