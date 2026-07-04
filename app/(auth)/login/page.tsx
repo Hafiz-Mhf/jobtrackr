@@ -17,8 +17,8 @@ const BENEFITS = [
   },
   {
     icon: BellRing,
-    title: 'Never go quiet too long',
-    description: "We flag applications you haven't followed up on in a week.",
+    title: 'Never ghost a follow-up',
+    description: 'We flag anything quiet for 7+ days.',
   },
 ]
 
@@ -120,7 +120,7 @@ export default function LoginPage() {
           <span className="text-lg font-semibold">JobTrackr</span>
         </div>
 
-        <div className="relative space-y-10 max-w-md">
+        <div className="relative flex-1 flex flex-col justify-center space-y-10 max-w-md">
           <h1 className="text-4xl font-semibold leading-tight">
             Stop losing track of your applications.
           </h1>
