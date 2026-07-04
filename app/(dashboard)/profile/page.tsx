@@ -22,7 +22,7 @@ export default async function ProfilePage() {
 
   return (
     <div className="p-6">
-      <div className="max-w-md mx-auto space-y-8">
+      <div className="max-w-md space-y-8">
         <h1 className="text-xl font-semibold text-brand-text">Profile</h1>
         <ProfileForm
           profile={profile ?? { id: user.id, created_at: user.created_at, updated_at: user.created_at }}

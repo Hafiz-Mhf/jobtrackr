@@ -122,7 +122,7 @@ export function ProfileForm({ profile, email }: Props) {
           type="text"
           value={fullName}
           onChange={(e) => setFullName(e.target.value)}
-          className="w-full border border-[var(--color-border)] rounded-md px-3 py-2 text-sm"
+          className="w-full border border-[var(--color-border)] rounded-md px-3 py-2 text-sm bg-surface"
         />
       </div>
 

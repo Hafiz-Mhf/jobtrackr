@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import { BellOff } from 'lucide-react'
 import { useJobs } from '@/hooks/useJobs'
 import { useReminders } from '@/hooks/useReminders'
 import { StatusBadge } from '@/components/jobs/StatusBadge'
@@ -16,7 +17,15 @@ export default function RemindersPage() {
     <div className="p-6">
       <h1 className="text-2xl font-semibold mb-4">Reminders</h1>
       {staleJobs.length === 0 && (
-        <p className="text-sm text-brand-muted">No stale applications. Nice work staying on top of things.</p>
+        <div className="flex flex-col items-center justify-center text-center py-24">
+          <div className="size-16 rounded-full bg-accent-light flex items-center justify-center mb-5">
+            <BellOff className="size-7 text-accent" />
+          </div>
+          <h2 className="text-lg font-semibold text-brand-text">No stale applications</h2>
+          <p className="text-sm text-brand-muted mt-1 max-w-xs">
+            Nice work staying on top of things — nothing has gone quiet for 7+ days.
+          </p>
+        </div>
       )}
       <div className="space-y-3">
         {staleJobs.map((job) => (
