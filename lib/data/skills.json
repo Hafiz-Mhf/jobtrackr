@@ -1,6 +1,6 @@
 [
   { "canonical": "React", "aliases": ["reactjs", "react.js"] },
-  { "canonical": "Next.js", "aliases": ["nextjs", "next"] },
+  { "canonical": "Next.js", "aliases": ["nextjs"] },
   { "canonical": "Vue", "aliases": ["vuejs", "vue.js"] },
   { "canonical": "Angular", "aliases": ["angularjs"] },
   { "canonical": "Svelte", "aliases": ["sveltejs"] },

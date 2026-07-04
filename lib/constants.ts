@@ -32,3 +32,4 @@ export const STALE_DAYS = 7
 export const MAX_NAME_LENGTH = 100
 export const MAX_FIELD_LENGTH = 200
 export const MAX_TEXT_LENGTH = 10000
+export const MAX_TAGS = 50

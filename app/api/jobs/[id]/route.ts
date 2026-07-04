@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { JOB_STATUSES, MAX_FIELD_LENGTH, MAX_TEXT_LENGTH } from '@/lib/constants'
+import { JOB_STATUSES, MAX_FIELD_LENGTH, MAX_TAGS, MAX_TEXT_LENGTH } from '@/lib/constants'
 import { learnTags } from '@/lib/tags/learn'
 
 interface PatchJobData {
@@ -67,6 +67,11 @@ function validatePatchInput(body: unknown): { valid: true; data: PatchJobData } 
   }
   if (Array.isArray(b.tags)) {
     data.tags = b.tags
+      .filter((t): t is string => typeof t === 'string')
+      .map((t) => t.trim())
+      .filter(Boolean)
+      .slice(0, MAX_TAGS)
+      .map((t) => t.slice(0, MAX_FIELD_LENGTH))
   }
   if (typeof b.notes === 'string') {
     data.notes = b.notes

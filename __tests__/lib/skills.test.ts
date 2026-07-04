@@ -45,4 +45,15 @@ describe('skills dictionary', () => {
     expect(isDictionaryTag('k8s')).toBe(true)
     expect(isDictionaryTag('Snowflake')).toBe(false)
   })
+
+  it('does not tag common English words from prose', () => {
+    expect(matchDictionary('ready to go above and beyond to the next level')).toEqual([])
+    expect(matchDictionary('you will excel at communication and handle the rest')).toEqual([])
+    expect(matchDictionary('in a word: growth, every spring')).toEqual([])
+  })
+
+  it('still matches ambiguous terms in their tech casing', () => {
+    expect(matchDictionary('Experience in Go and REST APIs')).toEqual(expect.arrayContaining(['Go', 'REST']))
+    expect(matchDictionary('Advanced Excel and Word skills')).toEqual(expect.arrayContaining(['Excel', 'Word']))
+  })
 })

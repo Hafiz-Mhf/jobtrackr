@@ -11,14 +11,18 @@ function escapeRegex(s: string): string {
   return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 }
 
-// Compile one regex per entry ONCE at module load, not per call.
-const COMPILED: { canonical: string; re: RegExp }[] = SKILLS.map((entry) => {
-  const terms = [entry.canonical, ...entry.aliases].map(escapeRegex)
-  return {
-    canonical: entry.canonical,
-    re: new RegExp(`\\b(?:${terms.join('|')})\\b`, 'i'),
+// Ambiguous terms that collide with common English words — matched case-sensitively
+// so prose like "go above", "the rest", "excel at" doesn't produce phantom tags.
+const CASE_SENSITIVE_TERMS = new Set(['Go', 'REST', 'SAP', 'Word', 'Excel', 'Spring'])
+
+// Compile one regex per term ONCE at module load, each mapped to its canonical.
+const COMPILED: { canonical: string; re: RegExp }[] = []
+for (const entry of SKILLS) {
+  for (const term of [entry.canonical, ...entry.aliases]) {
+    const flags = CASE_SENSITIVE_TERMS.has(term) ? '' : 'i'
+    COMPILED.push({ canonical: entry.canonical, re: new RegExp(`\\b${escapeRegex(term)}\\b`, flags) })
   }
-})
+}
 
 // Lowercased alias/canonical -> canonical, built once.
 const ALIAS_TO_CANONICAL = new Map<string, string>()
@@ -30,7 +34,15 @@ for (const entry of SKILLS) {
 }
 
 export function matchDictionary(text: string): string[] {
-  return COMPILED.filter((c) => c.re.test(text)).map((c) => c.canonical)
+  const found: string[] = []
+  const seen = new Set<string>()
+  for (const { canonical, re } of COMPILED) {
+    if (!seen.has(canonical) && re.test(text)) {
+      seen.add(canonical)
+      found.push(canonical)
+    }
+  }
+  return found
 }
 
 export function matchCustomTags(text: string, customTags: string[]): string[] {
