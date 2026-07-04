@@ -49,8 +49,8 @@ export async function learnTags(
       return
     }
     const existingLower = new Set((existing ?? []).map((r) => (r.tag as string).toLowerCase()))
-    const learnable = filterLearnableTags(tags, existing?.length ?? 0)
-      .filter((t) => !existingLower.has(t.toLowerCase()))
+    const novel = tags.filter((t) => !existingLower.has(t.trim().toLowerCase()))
+    const learnable = filterLearnableTags(novel, existing?.length ?? 0)
     if (learnable.length === 0) return
 
     const rows = learnable.map((tag) => ({ user_id: userId, tag }))
