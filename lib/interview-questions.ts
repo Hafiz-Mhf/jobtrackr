@@ -137,3 +137,37 @@ export function getQuestionsForJob(tags: string[]): InterviewQuestion[] {
   const tagQuestions = tags.flatMap((tag) => questionBank[tag] ?? [])
   return [...universalQuestions, ...tagQuestions]
 }
+
+const MAX_PER_CATEGORY = 3
+const MAX_TOTAL = 10
+
+/**
+ * Curated, bounded set for the prep panel: dedupes the raw pool, caps each
+ * category at MAX_PER_CATEGORY and the whole list at MAX_TOTAL. `shuffleKey`
+ * rotates each category's questions so "Shuffle" surfaces a different subset
+ * deterministically (0 = stable first render, no hydration mismatch).
+ */
+export function getPrepQuestions(tags: string[], shuffleKey = 0): InterviewQuestion[] {
+  const seen = new Set<string>()
+  const grouped: Record<string, InterviewQuestion[]> = {}
+  const order: string[] = []
+
+  for (const q of getQuestionsForJob(tags)) {
+    if (seen.has(q.question)) continue
+    seen.add(q.question)
+    if (!grouped[q.category]) {
+      grouped[q.category] = []
+      order.push(q.category)
+    }
+    grouped[q.category].push(q)
+  }
+
+  const result: InterviewQuestion[] = []
+  for (const category of order) {
+    const arr = grouped[category]
+    const rot = ((shuffleKey % arr.length) + arr.length) % arr.length
+    const rotated = [...arr.slice(rot), ...arr.slice(0, rot)]
+    result.push(...rotated.slice(0, MAX_PER_CATEGORY))
+  }
+  return result.slice(0, MAX_TOTAL)
+}

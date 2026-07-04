@@ -1,17 +1,30 @@
 'use client'
 
 import { use, useState } from 'react'
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { Pencil, Trash2 } from 'lucide-react'
+import { ArrowLeft, ChevronDown, ExternalLink, Pencil, Trash2 } from 'lucide-react'
 import { useJobs } from '@/hooks/useJobs'
 import { StatusBadge } from '@/components/jobs/StatusBadge'
 import { PrepPanel } from '@/components/prep/PrepPanel'
 import { JobForm, type JobFormValues } from '@/components/jobs/JobForm'
+import { JOB_STATUSES, STATUS_LABELS } from '@/lib/constants'
 import { formatDate } from '@/lib/utils'
+import type { JobStatus } from '@/types'
+
+/** Drop leading blank/company/role lines so the collapsed preview shows the
+ *  actual summary instead of repeating the page headline. */
+function summaryPreview(description: string, company: string, role: string): string {
+  const skip = new Set([company.trim().toLowerCase(), role.trim().toLowerCase()])
+  const lines = description.split('\n')
+  let i = 0
+  while (i < lines.length && (lines[i].trim() === '' || skip.has(lines[i].trim().toLowerCase()))) i++
+  return lines.slice(i).join('\n').trim() || description.trim()
+}
 
 export default function JobDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params)
-  const { jobs, loading, updateJob, deleteJob } = useJobs()
+  const { jobs, loading, updateJob, updateJobStatus, deleteJob } = useJobs()
   const [editing, setEditing] = useState(false)
   const [showFullJd, setShowFullJd] = useState(false)
   const router = useRouter()
@@ -41,7 +54,15 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
 
   return (
     <div className="p-6 grid md:grid-cols-[1fr_360px] gap-6">
-      <div>
+      <div className="md:sticky md:top-6">
+        <Link
+          href="/dashboard"
+          className="inline-flex items-center gap-1 text-sm text-brand-muted hover:text-accent transition-colors mb-4"
+        >
+          <ArrowLeft className="size-4" />
+          Back to board
+        </Link>
+
         <div className="flex items-start justify-between">
           <div>
             <h1 className="text-2xl font-semibold">{job.company}</h1>
@@ -62,7 +83,7 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
           <StatusBadge status={job.status} />
         </div>
 
-        <div className="flex gap-2 mt-4">
+        <div className="flex flex-wrap items-center gap-2 mt-4">
           <button
             type="button"
             onClick={() => setEditing(true)}
@@ -79,6 +100,19 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
             <Trash2 className="size-3.5" />
             Delete
           </button>
+          <label htmlFor="quick-status" className="ml-auto text-sm text-brand-muted">
+            Move to
+          </label>
+          <select
+            id="quick-status"
+            value={job.status}
+            onChange={(e) => updateJobStatus(id, e.target.value as JobStatus)}
+            className="border border-[var(--color-border)] rounded-md px-2 py-1.5 text-sm bg-surface"
+          >
+            {JOB_STATUSES.map((s) => (
+              <option key={s} value={s}>{STATUS_LABELS[s]}</option>
+            ))}
+          </select>
         </div>
 
         <dl className="grid grid-cols-2 gap-4 mt-6 text-sm">
@@ -91,7 +125,26 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
           {job.location && (
             <div><dt className="text-brand-muted">Location</dt><dd>{job.location}</dd></div>
           )}
+          {job.applied_at && (
+            <div><dt className="text-brand-muted">Applied</dt><dd>{formatDate(job.applied_at)}</dd></div>
+          )}
           <div><dt className="text-brand-muted">Last updated</dt><dd>{formatDate(job.last_updated)}</dd></div>
+          {job.url && (
+            <div className="col-span-2">
+              <dt className="text-brand-muted">Link</dt>
+              <dd>
+                <a
+                  href={job.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 text-accent hover:underline break-all"
+                >
+                  {job.url}
+                  <ExternalLink className="size-3.5 shrink-0" />
+                </a>
+              </dd>
+            </div>
+          )}
         </dl>
 
         {job.description && (
@@ -101,13 +154,14 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
               <button
                 type="button"
                 onClick={() => setShowFullJd((v) => !v)}
-                className="text-xs font-medium text-accent hover:underline"
+                className="inline-flex items-center gap-1 text-xs font-medium text-accent hover:underline"
               >
                 {showFullJd ? 'Hide full JD' : 'View full JD'}
+                <ChevronDown className={`size-3.5 transition-transform ${showFullJd ? 'rotate-180' : ''}`} />
               </button>
             </div>
             <p className={`text-sm whitespace-pre-wrap ${showFullJd ? '' : 'line-clamp-3 text-brand-muted'}`}>
-              {job.description}
+              {showFullJd ? job.description : summaryPreview(job.description, job.company, job.role)}
             </p>
           </div>
         )}
