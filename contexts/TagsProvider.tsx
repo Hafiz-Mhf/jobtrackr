@@ -14,7 +14,7 @@ export interface TagsContextValue {
   addLocal: (tags: string[]) => void
 }
 
-const TagsContext = createContext<TagsContextValue | null>(null)
+export const TagsContext = createContext<TagsContextValue | null>(null)
 
 export function TagsProvider({ children }: { children: React.ReactNode }) {
   const [customTags, setCustomTags] = useState<string[]>([])
@@ -39,10 +39,16 @@ export function TagsProvider({ children }: { children: React.ReactNode }) {
 
   const addLocal = useCallback((tags: string[]) => {
     setCustomTags((prev) => {
-      const lower = new Set(prev.map((t) => t.toLowerCase()))
-      const additions = tags
-        .map((t) => t.trim())
-        .filter((t) => t && !lower.has(t.toLowerCase()))
+      const seen = new Set(prev.map((t) => t.toLowerCase()))
+      const additions: string[] = []
+      for (const raw of tags) {
+        const t = raw.trim()
+        const key = t.toLowerCase()
+        if (t && !seen.has(key)) {
+          seen.add(key)
+          additions.push(t)
+        }
+      }
       return additions.length ? [...prev, ...additions] : prev
     })
   }, [])
