@@ -2,6 +2,7 @@
 
 import { use, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { Pencil, Trash2 } from 'lucide-react'
 import { useJobs } from '@/hooks/useJobs'
 import { StatusBadge } from '@/components/jobs/StatusBadge'
 import { PrepPanel } from '@/components/prep/PrepPanel'
@@ -12,6 +13,7 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
   const { id } = use(params)
   const { jobs, loading, updateJob, deleteJob } = useJobs()
   const [editing, setEditing] = useState(false)
+  const [showFullJd, setShowFullJd] = useState(false)
   const router = useRouter()
 
   const job = jobs.find((j) => j.id === id)
@@ -44,19 +46,48 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
           <div>
             <h1 className="text-2xl font-semibold">{job.company}</h1>
             <p className="text-brand-muted">{job.role}</p>
+            {job.tags.length > 0 && (
+              <div className="flex flex-wrap gap-1.5 mt-3">
+                {job.tags.map((tag) => (
+                  <span
+                    key={tag}
+                    className="font-mono text-xs px-2 py-0.5 rounded-full bg-accent-light text-accent font-medium"
+                  >
+                    {tag}
+                  </span>
+                ))}
+              </div>
+            )}
           </div>
           <StatusBadge status={job.status} />
         </div>
 
-        <div className="flex gap-3 mt-4">
-          <button onClick={() => setEditing(true)} className="text-sm text-accent underline">Edit</button>
-          <button onClick={handleDelete} className="text-sm text-[var(--color-rejected)] underline">Delete</button>
+        <div className="flex gap-2 mt-4">
+          <button
+            type="button"
+            onClick={() => setEditing(true)}
+            className="inline-flex items-center gap-1.5 border border-[var(--color-border)] rounded-md px-3 py-1.5 text-sm font-medium hover:border-accent hover:text-accent transition-colors"
+          >
+            <Pencil className="size-3.5" />
+            Edit
+          </button>
+          <button
+            type="button"
+            onClick={handleDelete}
+            className="inline-flex items-center gap-1.5 border border-[var(--color-rejected)]/30 text-[var(--color-rejected)] rounded-md px-3 py-1.5 text-sm font-medium hover:bg-[var(--color-rejected)]/10 transition-colors"
+          >
+            <Trash2 className="size-3.5" />
+            Delete
+          </button>
         </div>
 
         <dl className="grid grid-cols-2 gap-4 mt-6 text-sm">
-          {job.salary_range && (
-            <div><dt className="text-brand-muted">Salary</dt><dd className="font-mono">{job.salary_range}</dd></div>
-          )}
+          <div>
+            <dt className="text-brand-muted">Salary</dt>
+            <dd className={job.salary_range ? 'font-mono' : 'text-brand-muted italic'}>
+              {job.salary_range ?? 'Not listed'}
+            </dd>
+          </div>
           {job.location && (
             <div><dt className="text-brand-muted">Location</dt><dd>{job.location}</dd></div>
           )}
@@ -65,8 +96,19 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
 
         {job.description && (
           <div className="mt-6">
-            <h2 className="text-sm font-semibold mb-2">Description</h2>
-            <p className="text-sm whitespace-pre-wrap">{job.description}</p>
+            <div className="flex items-center justify-between mb-2">
+              <h2 className="text-sm font-semibold">Description</h2>
+              <button
+                type="button"
+                onClick={() => setShowFullJd((v) => !v)}
+                className="text-xs font-medium text-accent hover:underline"
+              >
+                {showFullJd ? 'Hide full JD' : 'View full JD'}
+              </button>
+            </div>
+            <p className={`text-sm whitespace-pre-wrap ${showFullJd ? '' : 'line-clamp-3 text-brand-muted'}`}>
+              {job.description}
+            </p>
           </div>
         )}
 

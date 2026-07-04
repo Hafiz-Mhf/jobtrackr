@@ -59,7 +59,7 @@ export default function JobsListPage() {
                 <p className="text-sm text-brand-muted truncate">{meta}</p>
                 {job.tags.length > 0 && (
                   <div className="flex flex-wrap gap-1.5 mt-2">
-                    {job.tags.slice(0, 6).map((tag) => (
+                    {job.tags.slice(0, 4).map((tag) => (
                       <span
                         key={tag}
                         className="font-mono text-xs px-2 py-0.5 rounded-full bg-accent-light text-accent font-medium"
@@ -67,6 +67,11 @@ export default function JobsListPage() {
                         {tag}
                       </span>
                     ))}
+                    {job.tags.length > 4 && (
+                      <span className="font-mono text-xs px-2 py-0.5 rounded-full bg-surface-muted text-brand-muted font-medium">
+                        +{job.tags.length - 4} more
+                      </span>
+                    )}
                   </div>
                 )}
               </div>
