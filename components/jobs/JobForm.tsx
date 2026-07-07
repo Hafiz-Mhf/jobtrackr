@@ -84,7 +84,7 @@ export function JobForm({ initial, onSubmit, submitLabel = 'Save job', reveal = 
             id="job-company"
             value={values.company}
             onChange={(e) => set('company', e.target.value)}
-            className="w-full border border-[var(--color-border)] rounded-md px-3 py-2 text-sm mt-1"
+            className="w-full border border-[var(--color-border)] bg-surface rounded-md px-3 py-2 text-sm mt-1 focus:border-accent focus:ring-2 focus:ring-accent/20 focus:outline-none transition-colors"
           />
         </div>
         <div>
@@ -93,7 +93,7 @@ export function JobForm({ initial, onSubmit, submitLabel = 'Save job', reveal = 
             id="job-role"
             value={values.role}
             onChange={(e) => set('role', e.target.value)}
-            className="w-full border border-[var(--color-border)] rounded-md px-3 py-2 text-sm mt-1"
+            className="w-full border border-[var(--color-border)] bg-surface rounded-md px-3 py-2 text-sm mt-1 focus:border-accent focus:ring-2 focus:ring-accent/20 focus:outline-none transition-colors"
           />
         </div>
       </motion.div>
@@ -105,7 +105,7 @@ export function JobForm({ initial, onSubmit, submitLabel = 'Save job', reveal = 
             id="job-salary"
             value={values.salary_range}
             onChange={(e) => set('salary_range', e.target.value)}
-            className="w-full border border-[var(--color-border)] rounded-md px-3 py-2 text-sm mt-1"
+            className="w-full border border-[var(--color-border)] bg-surface rounded-md px-3 py-2 text-sm mt-1 focus:border-accent focus:ring-2 focus:ring-accent/20 focus:outline-none transition-colors"
           />
         </div>
         <div>
@@ -114,7 +114,7 @@ export function JobForm({ initial, onSubmit, submitLabel = 'Save job', reveal = 
             id="job-location"
             value={values.location}
             onChange={(e) => set('location', e.target.value)}
-            className="w-full border border-[var(--color-border)] rounded-md px-3 py-2 text-sm mt-1"
+            className="w-full border border-[var(--color-border)] bg-surface rounded-md px-3 py-2 text-sm mt-1 focus:border-accent focus:ring-2 focus:ring-accent/20 focus:outline-none transition-colors"
           />
         </div>
       </motion.div>
@@ -125,7 +125,7 @@ export function JobForm({ initial, onSubmit, submitLabel = 'Save job', reveal = 
           id="job-url"
           value={values.url}
           onChange={(e) => set('url', e.target.value)}
-          className="w-full border border-[var(--color-border)] rounded-md px-3 py-2 text-sm mt-1"
+          className="w-full border border-[var(--color-border)] bg-surface rounded-md px-3 py-2 text-sm mt-1 focus:border-accent focus:ring-2 focus:ring-accent/20 focus:outline-none transition-colors"
         />
       </motion.div>
 
@@ -135,7 +135,7 @@ export function JobForm({ initial, onSubmit, submitLabel = 'Save job', reveal = 
           id="job-tags"
           value={values.tags}
           onChange={(e) => set('tags', e.target.value)}
-          className="w-full border border-[var(--color-border)] rounded-md px-3 py-2 text-sm mt-1 font-mono"
+          className="w-full border border-[var(--color-border)] bg-surface rounded-md px-3 py-2 text-sm mt-1 focus:border-accent focus:ring-2 focus:ring-accent/20 focus:outline-none transition-colors font-mono"
         />
       </motion.div>
 
@@ -145,7 +145,7 @@ export function JobForm({ initial, onSubmit, submitLabel = 'Save job', reveal = 
           id="job-status"
           value={values.status}
           onChange={(e) => set('status', e.target.value as JobStatus)}
-          className="w-full border border-[var(--color-border)] rounded-md px-3 py-2 text-sm mt-1"
+          className="w-full border border-[var(--color-border)] bg-surface rounded-md px-3 py-2 text-sm mt-1 focus:border-accent focus:ring-2 focus:ring-accent/20 focus:outline-none transition-colors"
         >
           {JOB_STATUSES.map((s) => (
             <option key={s} value={s}>{STATUS_LABELS[s]}</option>
@@ -160,7 +160,7 @@ export function JobForm({ initial, onSubmit, submitLabel = 'Save job', reveal = 
           value={values.description}
           onChange={(e) => set('description', e.target.value)}
           rows={4}
-          className="w-full border border-[var(--color-border)] rounded-md px-3 py-2 text-sm mt-1"
+          className="w-full border border-[var(--color-border)] bg-surface rounded-md px-3 py-2 text-sm mt-1 focus:border-accent focus:ring-2 focus:ring-accent/20 focus:outline-none transition-colors"
         />
       </motion.div>
 
@@ -171,7 +171,7 @@ export function JobForm({ initial, onSubmit, submitLabel = 'Save job', reveal = 
           value={values.notes}
           onChange={(e) => set('notes', e.target.value)}
           rows={3}
-          className="w-full border border-[var(--color-border)] rounded-md px-3 py-2 text-sm mt-1"
+          className="w-full border border-[var(--color-border)] bg-surface rounded-md px-3 py-2 text-sm mt-1 focus:border-accent focus:ring-2 focus:ring-accent/20 focus:outline-none transition-colors"
         />
       </motion.div>
 
