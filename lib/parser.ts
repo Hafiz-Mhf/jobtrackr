@@ -14,15 +14,38 @@ export function parseJobDescription(text: string, customTags: string[] = []): Pa
 
 // Words that signal a line is a job title rather than a company or heading.
 const ROLE_KEYWORDS =
-  /\b(engineer|developer|architect|manager|analyst|consultant|designer|specialist|administrator|coordinator|scientist|technician|programmer|lead|director|intern|associate|recruiter|accountant|auditor)\b/i
+  /\b(engineer|developer|architect|manager|analyst|consultant|designer|specialist|administrator|coordinator|scientist|technician|programmer|lead|director|intern|associate|recruiter|accountant|auditor|support|helpdesk|help\s?desk)\b/i
+
+// Common Malaysian locations — matched before the generic "City, ST" regex so a real
+// place is recognised and a capitalised job-title fragment isn't mistaken for a location.
+// Longer, more specific names first so "Subang Jaya" wins over "Subang", etc.
+const MY_LOCATIONS = [
+  'Kuala Lumpur', 'Petaling Jaya', 'Subang Jaya', 'Shah Alam', 'Iskandar Puteri',
+  'Johor Bahru', 'Kota Kinabalu', 'George Town', 'Mont Kiara', 'Bandar Sunway',
+  'Cyberjaya', 'Putrajaya', 'Damansara', 'Bangsar', 'Puchong', 'Cheras', 'Ampang',
+  'Kajang', 'Klang', 'Subang', 'Penang', 'Kuching', 'Ipoh', 'Melaka', 'Malacca',
+  'Seremban', 'Selangor', 'Sepang', 'Nilai',
+].sort((a, b) => b.length - a.length)
+
+function matchMalaysianLocation(text: string): string | undefined {
+  for (const city of MY_LOCATIONS) {
+    if (new RegExp(`\\b${city.replace(/\s+/g, '\\s+')}\\b`, 'i').test(text)) return city
+  }
+  return undefined
+}
 
 function nonEmptyLines(text: string): string[] {
   return text.split('\n').map((l) => l.trim()).filter(Boolean)
 }
 
 function cleanRole(s: string): string {
-  // Take the first line and drop a trailing "at Company" / " - Location" / " | X" suffix.
-  return s.split('\n')[0].replace(/\s+(?:at|@|[-–|·])\s+.*$/i, '').trim()
+  // Take the first line and drop a trailing "[Location]" tag (common on job boards),
+  // then any "at Company" / " - Location" / " | X" suffix.
+  return s
+    .split('\n')[0]
+    .replace(/\s*\[.*$/, '')
+    .replace(/\s+(?:at|@|[-–|·])\s+.*$/i, '')
+    .trim()
 }
 
 function cleanValue(s: string): string {
@@ -67,11 +90,15 @@ function extractLocation(text: string): string | undefined {
   const label = text.match(/^\s*(?:location|based in|office|work location)\s*[:\-]\s*(.+)$/im)
   if (label?.[1]) return cleanValue(label[1])
 
-  // 2. Work-mode keyword
+  // 2. Known Malaysian city / state
+  const myCity = matchMalaysianLocation(text)
+  if (myCity) return myCity
+
+  // 3. Work-mode keyword
   const remoteMatch = text.match(/\b(remote|hybrid|on.?site|in.?office)\b/i)
   if (remoteMatch) return remoteMatch[0]
 
-  // 3. "City, ST" / "City, Country" — require the comma so a bare capitalised word isn't mistaken for a place
+  // 4. "City, ST" / "City, Country" — require the comma so a bare capitalised word isn't mistaken for a place
   const cityMatch = text.match(/\b([A-Z][a-z]+(?:\s[A-Z][a-z]+)*,\s*(?:[A-Z]{2,}|[A-Z][a-z]+))\b/)
   return cityMatch?.[1]
 }

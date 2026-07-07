@@ -107,4 +107,23 @@ describe('parseJobDescription', () => {
     const result = parseJobDescription('Must know react, TypeScript and Node.js well.')
     expect(result.tags).toEqual(expect.arrayContaining(['React', 'TypeScript', 'Node.js']))
   })
+
+  it('reads the role from line 2 and strips a trailing [Location] tag', () => {
+    const result = parseJobDescription('Tech Solutions Sdn Bhd\nIT Support Specialist [Kuala Lumpur]\nWe are hiring...')
+    expect(result.role).toBe('IT Support Specialist')
+  })
+
+  it('recognises a Malaysian city from prose without a label', () => {
+    const result = parseJobDescription('Great role at our Petaling Jaya office. Join us!')
+    expect(result.location).toBe('Petaling Jaya')
+  })
+
+  it('extracts expanded IT-support tags', () => {
+    const result = parseJobDescription(
+      'Provide Technical Support and Troubleshooting. Familiar with Active Directory, ITIL and Ticketing.',
+    )
+    expect(result.tags).toEqual(
+      expect.arrayContaining(['Technical Support', 'Troubleshooting', 'Active Directory', 'ITIL', 'Ticketing']),
+    )
+  })
 })

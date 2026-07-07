@@ -75,5 +75,18 @@
   { "canonical": "Jira", "aliases": [] },
   { "canonical": "Audit", "aliases": ["auditing"] },
   { "canonical": "Compliance", "aliases": [] },
-  { "canonical": "ITAM", "aliases": ["it asset management"] }
+  { "canonical": "ITAM", "aliases": ["it asset management"] },
+  { "canonical": "Technical Support", "aliases": ["tech support", "it support"] },
+  { "canonical": "Troubleshooting", "aliases": [] },
+  { "canonical": "Networking", "aliases": ["network administration"] },
+  { "canonical": "Documentation", "aliases": [] },
+  { "canonical": "System Administration", "aliases": ["sysadmin", "system admin"] },
+  { "canonical": "Windows", "aliases": [] },
+  { "canonical": "Active Directory", "aliases": [] },
+  { "canonical": "ITIL", "aliases": [] },
+  { "canonical": "Helpdesk", "aliases": ["help desk", "service desk"] },
+  { "canonical": "Monitoring", "aliases": [] },
+  { "canonical": "Incident Management", "aliases": [] },
+  { "canonical": "SLA", "aliases": ["service level agreement"] },
+  { "canonical": "Ticketing", "aliases": [] }
 ]
