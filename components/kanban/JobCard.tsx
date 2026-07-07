@@ -44,7 +44,7 @@ export function JobCard({ job }: Props) {
           </div>
         )}
         <div className="flex items-center gap-2 mt-3 pt-3 border-t border-[var(--color-border)] text-xs text-brand-muted font-mono">
-          {formatDate(job.last_updated)}
+          {job.applied_at ? `Applied ${formatDate(job.applied_at)}` : formatDate(job.last_updated)}
         </div>
       </Link>
     </div>

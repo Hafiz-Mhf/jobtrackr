@@ -106,7 +106,7 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
           <select
             id="quick-status"
             value={job.status}
-            onChange={(e) => updateJobStatus(id, e.target.value as JobStatus)}
+            onChange={(e) => { updateJobStatus(id, e.target.value as JobStatus).catch(() => {}) }}
             className="border border-[var(--color-border)] rounded-md px-2 py-1.5 text-sm bg-surface"
           >
             {JOB_STATUSES.map((s) => (
@@ -124,6 +124,12 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
           </div>
           {job.location && (
             <div><dt className="text-brand-muted">Location</dt><dd>{job.location}</dd></div>
+          )}
+          {job.source && (
+            <div><dt className="text-brand-muted">Source</dt><dd>{job.source}</dd></div>
+          )}
+          {job.status === 'rejected' && job.rejection_reason && (
+            <div><dt className="text-brand-muted">Rejection reason</dt><dd>{job.rejection_reason}</dd></div>
           )}
           {job.applied_at && (
             <div><dt className="text-brand-muted">Applied</dt><dd>{formatDate(job.applied_at)}</dd></div>

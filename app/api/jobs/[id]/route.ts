@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { JOB_STATUSES, MAX_FIELD_LENGTH, MAX_TAGS, MAX_TEXT_LENGTH } from '@/lib/constants'
+import { JOB_STATUSES, MAX_FIELD_LENGTH, MAX_TAGS, MAX_TEXT_LENGTH, APPLICATION_SOURCES, REJECTION_REASONS } from '@/lib/constants'
 import { learnTags } from '@/lib/tags/learn'
 
 interface PatchJobData {
@@ -13,6 +13,10 @@ interface PatchJobData {
   location?: string
   tags?: string[]
   notes?: string
+  applied_at?: string | null
+  source?: string | null
+  rejection_reason?: string | null
+  rejected_at?: string | null
   last_updated: string
 }
 
@@ -36,6 +40,17 @@ function validatePatchInput(body: unknown): { valid: true; data: PatchJobData } 
   }
   if (b.description !== undefined && typeof b.description === 'string' && b.description.length > MAX_TEXT_LENGTH) {
     return { valid: false, error: 'Description is too long.' }
+  }
+  if (b.source !== undefined && b.source !== '' && b.source !== null && !APPLICATION_SOURCES.includes(b.source as never)) {
+    return { valid: false, error: 'Pick a source from the list.' }
+  }
+  if (b.applied_at !== undefined && b.applied_at !== '' && b.applied_at !== null) {
+    if (typeof b.applied_at !== 'string' || Number.isNaN(Date.parse(b.applied_at))) {
+      return { valid: false, error: 'Enter a valid applied date.' }
+    }
+  }
+  if (b.rejection_reason !== undefined && b.rejection_reason !== '' && b.rejection_reason !== null && !REJECTION_REASONS.includes(b.rejection_reason as never)) {
+    return { valid: false, error: 'Pick a rejection reason from the list.' }
   }
 
   // Build allowlisted update object — only these fields (plus a server-set
@@ -77,7 +92,56 @@ function validatePatchInput(body: unknown): { valid: true; data: PatchJobData } 
     data.notes = b.notes
   }
 
+  // applied_at: non-empty string sets the date; explicit empty string clears it.
+  if (typeof b.applied_at === 'string') {
+    data.applied_at = b.applied_at === '' ? null : b.applied_at
+  }
+  if (typeof b.source === 'string') {
+    data.source = b.source === '' ? null : b.source
+  }
+
+  // NOTE: rejected_at / rejection_reason bookkeeping is NOT decided here.
+  // Whether we're transitioning INTO rejected (vs. already rejected, vs.
+  // leaving rejected) depends on the job's *current* DB status, which this
+  // pure validator has no access to. That decision is made in the PATCH
+  // handler below, after it fetches the current row.
+
   return { valid: true, data }
+}
+
+// Applies rejected_at / rejection_reason bookkeeping onto an already-validated
+// update payload, given the job's current (pre-update) status. Must run in the
+// PATCH handler because it needs a DB read to know the current status.
+function applyRejectionBookkeeping(
+  data: PatchJobData,
+  targetStatus: string | undefined,
+  rawRejectionReason: unknown,
+  currentStatus: string | undefined
+): PatchJobData {
+  const hasRejectionReason = typeof rawRejectionReason === 'string'
+  const rejectionReasonValue = hasRejectionReason
+    ? (rawRejectionReason === '' ? null : rawRejectionReason)
+    : null
+
+  if (targetStatus === 'rejected') {
+    if (currentStatus !== 'rejected') {
+      // Transition INTO rejected: stamp rejected_at and store the reason.
+      data.rejected_at = new Date().toISOString()
+      data.rejection_reason = rejectionReasonValue
+    } else if (hasRejectionReason) {
+      // Already rejected: only touch the reason if the client sent one.
+      data.rejection_reason = rejectionReasonValue
+    }
+  } else if (targetStatus !== undefined) {
+    // Moving OUT of rejected (or into any other status): clear both.
+    data.rejected_at = null
+    data.rejection_reason = null
+  } else if (hasRejectionReason) {
+    // No status change, just editing the reason in place.
+    data.rejection_reason = rejectionReasonValue
+  }
+
+  return data
 }
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -95,9 +159,27 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       return NextResponse.json({ error: validation.error }, { status: 400 })
     }
 
+    // Read the current status so rejected_at is only stamped on the
+    // TRANSITION into rejected, not re-stamped on every edit to an
+    // already-rejected job.
+    const { data: current } = await supabase
+      .from('jobs')
+      .select('status')
+      .eq('id', id)
+      .eq('user_id', user.id)
+      .single()
+
+    const b = body as Record<string, unknown>
+    const updateData = applyRejectionBookkeeping(
+      validation.data,
+      typeof b.status === 'string' ? b.status : undefined,
+      b.rejection_reason,
+      current?.status
+    )
+
     const { data, error } = await supabase
       .from('jobs')
-      .update(validation.data)
+      .update(updateData)
       .eq('id', id)
       .eq('user_id', user.id)
       .select()

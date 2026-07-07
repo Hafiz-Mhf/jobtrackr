@@ -10,6 +10,9 @@ export interface Job {
   status: JobStatus
   salary_range?: string
   location?: string
+  source?: string
+  rejection_reason?: string
+  rejected_at?: string
   tags: string[]
   notes?: string
   applied_at?: string

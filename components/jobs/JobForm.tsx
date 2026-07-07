@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { motion } from 'framer-motion'
 import type { Job, JobStatus, ParsedJob } from '@/types'
-import { JOB_STATUSES, STATUS_LABELS } from '@/lib/constants'
+import { JOB_STATUSES, STATUS_LABELS, APPLICATION_SOURCES, REJECTION_REASONS } from '@/lib/constants'
 import { stagger, fadeUp } from '@/lib/animations'
 import { useTags } from '@/contexts/TagsProvider'
 
@@ -17,6 +17,9 @@ export interface JobFormValues {
   location: string
   tags: string
   notes: string
+  applied_at: string
+  source: string
+  rejection_reason: string
 }
 
 interface Props {
@@ -38,6 +41,10 @@ function toDefaults(initial?: Partial<ParsedJob> | Job): JobFormValues {
     location: initial?.location ?? '',
     tags: (initial?.tags ?? []).join(', '),
     notes: 'notes' in (initial ?? {}) ? (initial as Job).notes ?? '' : '',
+    // <input type="date"> needs YYYY-MM-DD; applied_at is stored as an ISO timestamp.
+    applied_at: 'applied_at' in (initial ?? {}) ? ((initial as Job).applied_at ?? '').slice(0, 10) : '',
+    source: 'source' in (initial ?? {}) ? (initial as Job).source ?? '' : '',
+    rejection_reason: 'rejection_reason' in (initial ?? {}) ? (initial as Job).rejection_reason ?? '' : '',
   }
 }
 
@@ -119,6 +126,33 @@ export function JobForm({ initial, onSubmit, submitLabel = 'Save job', reveal = 
         </div>
       </motion.div>
 
+      <motion.div variants={fadeUp} className="grid grid-cols-2 gap-4">
+        <div>
+          <label htmlFor="job-applied-at" className="text-sm font-medium">Applied on</label>
+          <input
+            id="job-applied-at"
+            type="date"
+            value={values.applied_at}
+            onChange={(e) => set('applied_at', e.target.value)}
+            className="w-full border border-[var(--color-border)] bg-surface rounded-md px-3 py-2 text-sm mt-1 focus:border-accent focus:ring-2 focus:ring-accent/20 focus:outline-none transition-colors"
+          />
+        </div>
+        <div>
+          <label htmlFor="job-source" className="text-sm font-medium">Source</label>
+          <select
+            id="job-source"
+            value={values.source}
+            onChange={(e) => set('source', e.target.value)}
+            className="w-full border border-[var(--color-border)] bg-surface rounded-md px-3 py-2 text-sm mt-1 focus:border-accent focus:ring-2 focus:ring-accent/20 focus:outline-none transition-colors"
+          >
+            <option value="">Not set</option>
+            {APPLICATION_SOURCES.map((s) => (
+              <option key={s} value={s}>{s}</option>
+            ))}
+          </select>
+        </div>
+      </motion.div>
+
       <motion.div variants={fadeUp}>
         <label htmlFor="job-url" className="text-sm font-medium">Job URL</label>
         <input
@@ -152,6 +186,23 @@ export function JobForm({ initial, onSubmit, submitLabel = 'Save job', reveal = 
           ))}
         </select>
       </motion.div>
+
+      {values.status === 'rejected' && (
+        <motion.div variants={fadeUp}>
+          <label htmlFor="job-rejection-reason" className="text-sm font-medium">Rejection reason</label>
+          <select
+            id="job-rejection-reason"
+            value={values.rejection_reason}
+            onChange={(e) => set('rejection_reason', e.target.value)}
+            className="w-full border border-[var(--color-border)] bg-surface rounded-md px-3 py-2 text-sm mt-1 focus:border-accent focus:ring-2 focus:ring-accent/20 focus:outline-none transition-colors"
+          >
+            <option value="">Not set</option>
+            {REJECTION_REASONS.map((r) => (
+              <option key={r} value={r}>{r}</option>
+            ))}
+          </select>
+        </motion.div>
+      )}
 
       <motion.div variants={fadeUp}>
         <label htmlFor="job-description" className="text-sm font-medium">Description</label>

@@ -33,3 +33,15 @@ export const MAX_NAME_LENGTH = 100
 export const MAX_FIELD_LENGTH = 200
 export const MAX_TEXT_LENGTH = 10000
 export const MAX_TAGS = 50
+
+// Application sources — Malaysian job portals plus discovery channels.
+export const APPLICATION_SOURCES = [
+  'LinkedIn', 'JobStreet', 'Hiredly', 'Ricebowl', 'Maukerja',
+  'Indeed', 'Jobstore', 'Glassdoor', 'Referral', 'Recruiter',
+  'Company website', 'Career fair', 'Other',
+] as const
+
+// Preset reasons captured when a job is moved to Rejected.
+export const REJECTION_REASONS = [
+  'No response', 'Not qualified', 'Withdrew', 'Offer declined',
+] as const
