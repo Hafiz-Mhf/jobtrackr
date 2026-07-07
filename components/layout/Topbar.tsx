@@ -22,12 +22,7 @@ export function Topbar({ profile, email }: Props) {
   }
 
   return (
-    <header className="h-[var(--topbar-height)] border-b border-[var(--color-border)] flex items-center justify-between px-6 bg-surface">
-      <input
-        type="search"
-        placeholder="Search jobs..."
-        className="text-sm border border-[var(--color-border)] rounded-md px-3 py-1.5 w-64"
-      />
+    <header className="h-[var(--topbar-height)] border-b border-[var(--color-border)] flex items-center justify-end px-6 bg-surface">
       <div className="flex items-center gap-3">
         <Link
           href="/jobs/new"
