@@ -21,7 +21,7 @@ export interface JobsContextValue {
   loading: boolean
   error: string | null
   createJob: (values: Partial<JobFormValues>) => Promise<Job>
-  updateJobStatus: (id: string, status: JobStatus) => Promise<void>
+  updateJobStatus: (id: string, status: JobStatus, reason?: string) => Promise<void>
   updateJob: (id: string, values: Partial<JobFormValues>) => Promise<Job>
   deleteJob: (id: string) => Promise<void>
   refresh: () => Promise<void>
@@ -77,7 +77,7 @@ export function JobsProvider({ children }: { children: React.ReactNode }) {
     return json.data
   }, [])
 
-  const updateJobStatus = useCallback(async (id: string, status: JobStatus): Promise<void> => {
+  const updateJobStatus = useCallback(async (id: string, status: JobStatus, reason?: string): Promise<void> => {
     let previous: Job[] = []
     setJobs((prev) => {
       previous = prev
@@ -86,13 +86,16 @@ export function JobsProvider({ children }: { children: React.ReactNode }) {
     const res = await fetch(`/api/jobs/${id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ status }),
+      body: JSON.stringify(reason !== undefined ? { status, rejection_reason: reason } : { status }),
     })
     if (!res.ok) {
       setJobs(previous)
       toast.error("Couldn't update status.", { duration: Infinity })
       throw new Error("Couldn't update status.")
     }
+    const json = (await res.json()) as JobResponse
+    // Replace with the server row so rejected_at / cleared reason stay in sync.
+    setJobs((prev) => prev.map((j) => (j.id === id ? json.data : j)))
     toast.success(`Moved to ${STATUS_LABELS[status]}`)
   }, [])
 
