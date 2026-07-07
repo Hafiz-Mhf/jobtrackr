@@ -106,7 +106,7 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
           <select
             id="quick-status"
             value={job.status}
-            onChange={(e) => updateJobStatus(id, e.target.value as JobStatus)}
+            onChange={(e) => { updateJobStatus(id, e.target.value as JobStatus).catch(() => {}) }}
             className="border border-[var(--color-border)] rounded-md px-2 py-1.5 text-sm bg-surface"
           >
             {JOB_STATUSES.map((s) => (

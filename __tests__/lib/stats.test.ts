@@ -28,6 +28,16 @@ describe('getWeeklyStats', () => {
     expect(getWeeklyStats(jobs, now).appliedThisWeek).toBe(1)
   })
 
+  it('counts a job applied exactly 7 days ago (inclusive boundary)', () => {
+    const jobs = [job({ applied_at: '2026-06-30T00:00:00Z' })]
+    expect(getWeeklyStats(jobs, now).appliedThisWeek).toBe(1)
+  })
+
+  it('does not count a job applied 8 days ago', () => {
+    const jobs = [job({ applied_at: '2026-06-29T00:00:00Z' })]
+    expect(getWeeklyStats(jobs, now).appliedThisWeek).toBe(0)
+  })
+
   it('counts live interview and offer columns regardless of date', () => {
     const jobs = [
       job({ status: 'interview' }),

@@ -60,3 +60,16 @@ Final whole-branch review: complete (range d053ad0..603d1ab, opus). Verdict: mer
   - Minor (accepted, Task 1): .NET/C++/C# bare-symbol canonicals match only via aliases.
   - Minor (accepted, Task 4): concurrent learnTags batch insert can fail wholesale on unique-conflict race — best-effort, never throws.
 ALL 8 TASKS + FINAL REVIEW COMPLETE. Scalable tags feature done (dictionary + per-user learned tags).
+
+--- Job Insights Plan (docs/superpowers/plans/2026-07-07-job-insights.md) ---
+Task 1: complete (commits 1e4b50c..cb7d33e, review clean)
+Task 2: complete (commits cb7d33e..9cea2dc, review clean, 5/5 tests)
+Task 3: complete (commits 9cea2dc..bc7a6a8, review clean, 4/4 tests)
+Task 4: complete (commits bc7a6a8..eeb4fa3, review clean; 2 minor plan-mandated notes for final review: (a) PATCH source:null neither clears nor errors—only '' clears; (b) branch-3 rejection_reason edit doesn't guard on current DB status)
+Task 5: complete (commits eeb4fa3..fa422c4, review clean)
+Task 6: complete (commits fa422c4..a0550d0, review clean)
+Task 7: complete (commits a0550d0..0344887, review clean; minor: no Esc/focus-trap on modal—non-blocking; live drag deferred to Task 11)
+Task 8: complete (commits 0344887..303e766, review clean)
+Task 9: complete (commits 303e766..1750e0c, review clean)
+Task 10: complete (commits 1750e0c..3652bdf, review clean; note: pre-existing unrelated lint error in Sidebar.tsx, not touched by this branch)
+Task 11: verification complete — vitest 66/66, tsc clean, npm run build clean, migration 0005 applied live to apgdyaiztmsnohakjkfg (source/rejection_reason/rejected_at confirmed via list_tables). Pre-existing Sidebar.tsx lint error (not this branch). Live browser e2e smoke left for user.

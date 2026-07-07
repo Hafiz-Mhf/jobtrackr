@@ -11,7 +11,8 @@ const WEEK_MS = 7 * 24 * 60 * 60 * 1000
 
 function withinWeek(iso: string | undefined, now: Date): boolean {
   if (!iso) return false
-  return now.getTime() - new Date(iso).getTime() <= WEEK_MS
+  const diff = now.getTime() - new Date(iso).getTime()
+  return diff >= 0 && diff <= WEEK_MS
 }
 
 export function getWeeklyStats(jobs: Job[], now: Date = new Date()): WeeklyStats {

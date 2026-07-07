@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { JOB_STATUSES, MAX_FIELD_LENGTH, MAX_TAGS, MAX_TEXT_LENGTH, APPLICATION_SOURCES } from '@/lib/constants'
+import { JOB_STATUSES, MAX_FIELD_LENGTH, MAX_TAGS, MAX_TEXT_LENGTH, APPLICATION_SOURCES, REJECTION_REASONS } from '@/lib/constants'
 import { learnTags } from '@/lib/tags/learn'
 
 interface InsertJobData {
@@ -16,6 +16,7 @@ interface InsertJobData {
   applied_at?: string | null
   source?: string | null
   rejected_at?: string | null
+  rejection_reason?: string | null
 }
 
 function validateJobInput(body: unknown): { valid: true; data: InsertJobData } | { valid: false; error: string } {
@@ -46,6 +47,9 @@ function validateJobInput(body: unknown): { valid: true; data: InsertJobData } |
     if (typeof b.applied_at !== 'string' || Number.isNaN(Date.parse(b.applied_at))) {
       return { valid: false, error: 'Enter a valid applied date.' }
     }
+  }
+  if (b.rejection_reason !== undefined && b.rejection_reason !== '' && b.rejection_reason !== null && !REJECTION_REASONS.includes(b.rejection_reason as never)) {
+    return { valid: false, error: 'Pick a rejection reason from the list.' }
   }
 
   // Build allowlisted insert object — only these fields reach the DB
@@ -86,9 +90,12 @@ function validateJobInput(body: unknown): { valid: true; data: InsertJobData } |
   if (typeof b.source === 'string' && b.source !== '') {
     insertData.source = b.source
   }
-  // A job created directly in Rejected gets a rejected timestamp.
+  // A job created directly in Rejected gets a rejected timestamp (and reason, if provided).
   if (insertData.status === 'rejected') {
     insertData.rejected_at = new Date().toISOString()
+    if (typeof b.rejection_reason === 'string' && b.rejection_reason !== '') {
+      insertData.rejection_reason = b.rejection_reason
+    }
   }
 
   return { valid: true, data: insertData }
