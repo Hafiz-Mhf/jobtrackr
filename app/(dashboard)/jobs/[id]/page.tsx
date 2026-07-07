@@ -125,6 +125,12 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
           {job.location && (
             <div><dt className="text-brand-muted">Location</dt><dd>{job.location}</dd></div>
           )}
+          {job.source && (
+            <div><dt className="text-brand-muted">Source</dt><dd>{job.source}</dd></div>
+          )}
+          {job.status === 'rejected' && job.rejection_reason && (
+            <div><dt className="text-brand-muted">Rejection reason</dt><dd>{job.rejection_reason}</dd></div>
+          )}
           {job.applied_at && (
             <div><dt className="text-brand-muted">Applied</dt><dd>{formatDate(job.applied_at)}</dd></div>
           )}
