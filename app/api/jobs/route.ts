@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { JOB_STATUSES, MAX_FIELD_LENGTH, MAX_TAGS, MAX_TEXT_LENGTH } from '@/lib/constants'
+import { JOB_STATUSES, MAX_FIELD_LENGTH, MAX_TAGS, MAX_TEXT_LENGTH, APPLICATION_SOURCES } from '@/lib/constants'
 import { learnTags } from '@/lib/tags/learn'
 
 interface InsertJobData {
@@ -13,6 +13,9 @@ interface InsertJobData {
   location?: string
   tags?: string[]
   notes?: string
+  applied_at?: string | null
+  source?: string | null
+  rejected_at?: string | null
 }
 
 function validateJobInput(body: unknown): { valid: true; data: InsertJobData } | { valid: false; error: string } {
@@ -35,6 +38,14 @@ function validateJobInput(body: unknown): { valid: true; data: InsertJobData } |
   }
   if (typeof b.notes === 'string' && b.notes.length > MAX_TEXT_LENGTH) {
     return { valid: false, error: 'Notes are too long.' }
+  }
+  if (b.source !== undefined && b.source !== '' && !APPLICATION_SOURCES.includes(b.source as never)) {
+    return { valid: false, error: 'Pick a source from the list.' }
+  }
+  if (b.applied_at !== undefined && b.applied_at !== '' && b.applied_at !== null) {
+    if (typeof b.applied_at !== 'string' || Number.isNaN(Date.parse(b.applied_at))) {
+      return { valid: false, error: 'Enter a valid applied date.' }
+    }
   }
 
   // Build allowlisted insert object — only these fields reach the DB
@@ -68,6 +79,16 @@ function validateJobInput(body: unknown): { valid: true; data: InsertJobData } |
   }
   if (typeof b.notes === 'string') {
     insertData.notes = b.notes
+  }
+  if (typeof b.applied_at === 'string' && b.applied_at !== '') {
+    insertData.applied_at = b.applied_at
+  }
+  if (typeof b.source === 'string' && b.source !== '') {
+    insertData.source = b.source
+  }
+  // A job created directly in Rejected gets a rejected timestamp.
+  if (insertData.status === 'rejected') {
+    insertData.rejected_at = new Date().toISOString()
   }
 
   return { valid: true, data: insertData }

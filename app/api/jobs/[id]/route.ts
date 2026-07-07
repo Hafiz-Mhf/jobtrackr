@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { JOB_STATUSES, MAX_FIELD_LENGTH, MAX_TAGS, MAX_TEXT_LENGTH } from '@/lib/constants'
+import { JOB_STATUSES, MAX_FIELD_LENGTH, MAX_TAGS, MAX_TEXT_LENGTH, APPLICATION_SOURCES, REJECTION_REASONS } from '@/lib/constants'
 import { learnTags } from '@/lib/tags/learn'
 
 interface PatchJobData {
@@ -13,6 +13,10 @@ interface PatchJobData {
   location?: string
   tags?: string[]
   notes?: string
+  applied_at?: string | null
+  source?: string | null
+  rejection_reason?: string | null
+  rejected_at?: string | null
   last_updated: string
 }
 
@@ -36,6 +40,17 @@ function validatePatchInput(body: unknown): { valid: true; data: PatchJobData } 
   }
   if (b.description !== undefined && typeof b.description === 'string' && b.description.length > MAX_TEXT_LENGTH) {
     return { valid: false, error: 'Description is too long.' }
+  }
+  if (b.source !== undefined && b.source !== '' && b.source !== null && !APPLICATION_SOURCES.includes(b.source as never)) {
+    return { valid: false, error: 'Pick a source from the list.' }
+  }
+  if (b.applied_at !== undefined && b.applied_at !== '' && b.applied_at !== null) {
+    if (typeof b.applied_at !== 'string' || Number.isNaN(Date.parse(b.applied_at))) {
+      return { valid: false, error: 'Enter a valid applied date.' }
+    }
+  }
+  if (b.rejection_reason !== undefined && b.rejection_reason !== '' && b.rejection_reason !== null && !REJECTION_REASONS.includes(b.rejection_reason as never)) {
+    return { valid: false, error: 'Pick a rejection reason from the list.' }
   }
 
   // Build allowlisted update object — only these fields (plus a server-set
@@ -75,6 +90,29 @@ function validatePatchInput(body: unknown): { valid: true; data: PatchJobData } 
   }
   if (typeof b.notes === 'string') {
     data.notes = b.notes
+  }
+
+  // applied_at: non-empty string sets the date; explicit empty string clears it.
+  if (typeof b.applied_at === 'string') {
+    data.applied_at = b.applied_at === '' ? null : b.applied_at
+  }
+  if (typeof b.source === 'string') {
+    data.source = b.source === '' ? null : b.source
+  }
+
+  // Rejection bookkeeping is driven by the target status:
+  //  - moving INTO rejected stamps rejected_at and stores the (optional) reason
+  //  - moving OUT of rejected clears both, keeping the data honest
+  //  - editing the reason while already rejected (no status in payload) just updates it
+  if (data.status === 'rejected') {
+    data.rejected_at = new Date().toISOString()
+    data.rejection_reason =
+      typeof b.rejection_reason === 'string' && b.rejection_reason !== '' ? b.rejection_reason : null
+  } else if (typeof data.status === 'string') {
+    data.rejected_at = null
+    data.rejection_reason = null
+  } else if (typeof b.rejection_reason === 'string') {
+    data.rejection_reason = b.rejection_reason === '' ? null : b.rejection_reason
   }
 
   return { valid: true, data }
