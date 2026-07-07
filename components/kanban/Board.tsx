@@ -1,10 +1,12 @@
 'use client'
 
+import { useState } from 'react'
 import { DndContext, DragEndEvent, PointerSensor, useSensor, useSensors } from '@dnd-kit/core'
 import { useJobs } from '@/hooks/useJobs'
 import { JOB_STATUSES } from '@/lib/constants'
 import type { Job, JobStatus } from '@/types'
 import { Column } from './Column'
+import { RejectionModal } from './RejectionModal'
 
 function resolveTargetStatus(overId: string, jobs: Job[]): JobStatus | null {
   if (JOB_STATUSES.includes(overId as JobStatus)) {
@@ -17,6 +19,15 @@ function resolveTargetStatus(overId: string, jobs: Job[]): JobStatus | null {
 export function Board() {
   const { jobs, loading, error, updateJobStatus } = useJobs()
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }))
+  // When a card is dragged into Rejected we hold its id and prompt for a reason
+  // before committing the move.
+  const [pendingRejectId, setPendingRejectId] = useState<string | null>(null)
+
+  function commitStatus(jobId: string, status: JobStatus, reason?: string) {
+    updateJobStatus(jobId, status, reason).catch(() => {
+      // useJobs reverts optimistic state + toasts on failure.
+    })
+  }
 
   function handleDragEnd(event: DragEndEvent) {
     const { active, over } = event
@@ -27,9 +38,11 @@ export function Board() {
     const job = jobs.find((j) => j.id === jobId)
     if (!job || !targetStatus || job.status === targetStatus) return
 
-    updateJobStatus(jobId, targetStatus).catch(() => {
-      // useJobs already reverts optimistic state on failure; surface via toast in Task 27
-    })
+    if (targetStatus === 'rejected') {
+      setPendingRejectId(jobId)
+      return
+    }
+    commitStatus(jobId, targetStatus)
   }
 
   if (loading) {
@@ -41,12 +54,27 @@ export function Board() {
   }
 
   return (
-    <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
-      <div className="grid grid-cols-5 gap-4 p-6 items-start min-h-[calc(100vh-var(--topbar-height))] min-w-225 overflow-x-auto">
-        {JOB_STATUSES.map((status) => (
-          <Column key={status} status={status} jobs={jobs.filter((j) => j.status === status)} />
-        ))}
-      </div>
-    </DndContext>
+    <>
+      <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
+        <div className="grid grid-cols-5 gap-4 p-6 items-start min-h-[calc(100vh-var(--topbar-height))] min-w-225 overflow-x-auto">
+          {JOB_STATUSES.map((status) => (
+            <Column key={status} status={status} jobs={jobs.filter((j) => j.status === status)} />
+          ))}
+        </div>
+      </DndContext>
+
+      <RejectionModal
+        open={pendingRejectId !== null}
+        onSelect={(reason) => {
+          if (pendingRejectId) commitStatus(pendingRejectId, 'rejected', reason)
+          setPendingRejectId(null)
+        }}
+        onSkip={() => {
+          if (pendingRejectId) commitStatus(pendingRejectId, 'rejected', '')
+          setPendingRejectId(null)
+        }}
+        onCancel={() => setPendingRejectId(null)}
+      />
+    </>
   )
 }
