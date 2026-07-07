@@ -73,3 +73,12 @@ Task 8: complete (commits 0344887..303e766, review clean)
 Task 9: complete (commits 303e766..1750e0c, review clean)
 Task 10: complete (commits 1750e0c..3652bdf, review clean; note: pre-existing unrelated lint error in Sidebar.tsx, not touched by this branch)
 Task 11: verification complete — vitest 66/66, tsc clean, npm run build clean, migration 0005 applied live to apgdyaiztmsnohakjkfg (source/rejection_reason/rejected_at confirmed via list_tables). Pre-existing Sidebar.tsx lint error (not this branch). Live browser e2e smoke left for user.
+Final whole-branch review: complete (range 1e4b50c..3652bdf, opus). Verdict: merge with fixes -> fixed (commit 88a5f38, re-reviewed clean by opus, 68 tests).
+  - Important (FIXED): editing an already-rejected job via JobForm re-stamped rejected_at=now() (corrupted weekly 'rejected this week' stat); PATCH now reads current status and stamps only on transition into rejected.
+  - Important (FIXED): POST/create silently discarded rejection_reason (dropdown shown on new-job form when status=rejected); now validated against REJECTION_REASONS + stored for rejected creates.
+  - Minor (FIXED): getWeeklyStats withinWeek counted future-dated applied_at/rejected_at; added diff>=0 lower bound.
+  - Minor (FIXED): added exact-7-day (inclusive) + 8-day boundary tests to stats.test.ts.
+  - Minor (FIXED): detail-page quick-status select onChange now .catch()es to avoid unhandled rejection.
+  - Minor (SKIPPED, accepted): inline editable rejection dropdown on detail page — 'edit later' goes through the Edit form per brainstorm decision; detail shows read-only reason.
+  - Minor (accepted, pre-existing): PATCH reason-only edit on a non-rejected job stores reason w/o rejected_at; cross-user PATCH returns 500 not 404.
+ALL 11 TASKS + FINAL REVIEW COMPLETE. Job insights feature done. Migration 0005 applied live.
