@@ -182,29 +182,29 @@ body::before {
 
 ## Component Design Specs
 
-### Sidebar
+### Sidebar (Collapsible)
 
 ```
-┌─────────────────────┐
-│  ◈ JobTrackr        │  ← Logo: icon + name, accent color
-├─────────────────────┤
-│  ▦  Dashboard       │  ← Active: accent bg pill, semibold
-│  ☰  All Jobs        │
-│  ✦  Add Job         │
-│  🔔 Reminders  (3)  │  ← Badge: rose pill with count
-├─────────────────────┤
-│  [User avatar]      │  ← Bottom: avatar, name, logout
-│  Alex Johnson       │
-└─────────────────────┘
+Expanded (w-[var(--sidebar-width)]):           Collapsed (w-16):
+┌─────────────────────┐                       ┌────┐
+│  ◈ JobTrackr     [<]│  ← Collapse button    │ ◈  │
+├─────────────────────┤                       ├────┤
+│  ▦  Dashboard       │                       │ ▦  │
+│  ☰  All Jobs        │                       │ ☰  │
+│  ✦  Add Job         │                       │ ✦  │
+│  🔔 Reminders  (3)  │  ← Rose badge         │ 🔔• │ ← Status dot indicator
+└─────────────────────┘                       └────┘
 ```
+
+The sidebar is collapsible to maximize screen space. Transition is smoothed with `transition-[width] duration-200 ease-out`. Collapsed state is persisted locally in `localStorage` under `jobtrackr:sidebar-collapsed`.
 
 ```css
 .sidebar {
-  width: var(--sidebar-width);
+  width: var(--sidebar-width); /* transitions to w-16 when collapsed */
   height: 100vh;
   background: var(--color-surface-muted);
   border-right: 1px solid var(--color-border);
-  padding: 1.5rem 1rem;
+  padding: 1rem;
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
@@ -251,7 +251,7 @@ body::before {
 │ │ Remote · $120k   │   │
 │ │ React  Next.js   │   │
 │ │ ─────────────── │   │
-│ │ Applied 3d ago   │   │
+│ │ Applied 3d ago   │   │  ← Shows applied date (last updated fallback)
 │ └──────────────────┘   │
 │                        │
 │ + Add job              │
@@ -356,6 +356,24 @@ body::before {
   color: var(--color-text-muted);
   font-family: var(--font-mono);
 }
+```
+
+### Drag-to-Reject Reason Modal
+Dragging a card to the "Rejected" column intercepts the update and triggers a clean, centered modal option dialog:
+- Backdrop: `bg-black/40` overlay.
+- Window: `w-full max-w-sm bg-surface p-5 border border-[var(--color-border)] rounded-lg shadow-card-hover`.
+- Options: 4 preset reason buttons: `No response`, `Not qualified`, `Withdrew`, `Offer declined`. Hover highlights the border and text with accent colors.
+- Actions: "Cancel" (bottom-left, aborts drag update) and "Skip" (bottom-right, proceeds with no rejection reason).
+
+### Dashboard Weekly Stats Bar
+A 4-tile summary widget rendered directly below the top header dashboard view:
+- Layout: Grid-based row (`grid grid-cols-2 md:grid-cols-4 gap-4 px-6 pt-6`).
+- Card layout: `bg-surface border border-[var(--color-border)] rounded-lg p-4 shadow-card`.
+- Tiles:
+  1. **Applied this week**: count of applications with `applied_at` in the last 7 days.
+  2. **Active interviews**: current count of items in `Interview` status.
+  3. **Offers**: current count of items in `Offer` status.
+  4. **Rejected this week**: count of applications with `rejected_at` in the last 7 days.
 ```
 
 ---
@@ -529,37 +547,49 @@ const panelVariants = {
 
 ### 1. Login Page
 
-- Split layout: left = aurora-wash illustration/tagline, right = sign-in form
+- Split layout: left = aurora-wash illustration/tagline, right = sign-in form.
 - Tagline: **"Your job search, actually organized."**
-- Google OAuth button + email option
+- Google OAuth button + email option.
+- Signup option includes a mandatory checkbox: **"I agree to the Privacy Policy"** linked to `/privacy`. Google OAuth displays a corresponding terms consent notice.
 - No clutter. Just the form and one confident headline.
 
 ### 2. Dashboard (Kanban Board)
 
-- Full-width kanban with horizontal scroll on desktop
-- Topbar: search input + "Add Job" CTA button (accent, prominent)
-- Empty state per column: soft dashed border + icon + short copy ("No applications here yet")
-- Drag-and-drop between columns updates status in Supabase in real-time
+- Weekly Stats Bar prominently displayed at the top.
+- Full-width kanban with horizontal scroll on desktop.
+- Topbar: User dropdown menu (displaying avatar/initials with Profile/Logout options) + "Add Job" CTA button (accent, prominent).
+- Empty state per column: soft dashed border + icon + short copy (e.g. "Bookmark roles you're eyeing").
+- Drag-and-drop between columns updates status in Supabase in real-time. Drag to Rejected prompts the rejection reason modal.
 
 ### 3. Add Job Page
 
-- Two paths clearly visible: **Paste JD** (primary) and **Manual Entry** (secondary, text link)
-- Paste path: large textarea → "Extract Details" button → instant staggered reveal → review fields → save
-- Manual path: standard form, all fields optional except company + role
-- On save: toast notification slides in from bottom-right
+- Two paths clearly visible: **Paste JD** (primary) and **Manual Entry** (secondary, text link).
+- Paste path: large textarea → "Extract Details" button → instant staggered reveal → review prefilled fields (including Company, Role, Location, Salary, Tags) → save.
+- Manual path: standard form, all fields optional except company + role. Now includes **Applied on** date-picker and **Source** dropdown selection.
+- On save: toast notification slides in from bottom-right.
 
 ### 4. Job Detail Page
 
-- Header: company name (large) + role + status badge + edit/delete actions
-- Two-column layout (desktop): left = job details + notes, right = interview prep panel
-- Interview prep: skeleton loading → staggered question reveal
-- Notes: inline editable textarea (click to edit pattern)
+- Overhauled detailed layout.
+- Header: company name (large) + role + status badge + edit/delete actions.
+- Displays metadata cleanly: location, salary, source (JobStreet, LinkedIn, etc.), and applied date. If status is rejected, displays the rejection reason dropdown.
+- Notes: inline editable textarea with automatic save.
+- Two-column layout (desktop): left = job details + notes, right = interview prep panel.
+- Interview prep: skeleton loading → staggered question reveal. Includes technical/behavioral prep matched to detected tags.
 
 ### 5. Reminders Page
 
-- List of stale applications with days-since-last-update
-- Each item: job card variant with amber warning banner
-- Quick actions: "Update Status" button inline
+- List of stale applications with days-since-last-update.
+- Staleness is measured from `applied_at` (applied date) with a fallback to `last_updated`.
+- Each item: job card variant with amber warning banner.
+- Quick actions: "Update Status" button inline.
+
+### 6. Profile Page
+
+- Details page containing display name editor, file picker for avatar image (jpg/png/webp, ≤2MB).
+- Avatar stored in public bucket `avatars` on Supabase Storage.
+- Danger zone: Data export ("Download my data" JSON download) and account deletion ("Delete my account" confirm by typing `DELETE`).
+- Triggers cascade removal of user data (profile, jobs, avatar image).
 
 ---
 

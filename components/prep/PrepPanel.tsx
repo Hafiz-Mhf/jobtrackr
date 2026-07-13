@@ -28,7 +28,7 @@ export function PrepPanel({ tags }: Props) {
   }, {})
 
   return (
-    <div className="bg-surface border border-[var(--color-border)] border-t-4 border-t-[color:var(--color-accent)] rounded-xl p-6">
+    <div className="bg-surface border border-[var(--color-border)] rounded-2xl p-6 shadow-card">
       <div className="flex items-start justify-between gap-2 mb-1">
         <h2 className="text-lg font-semibold">Interview Prep</h2>
         <button

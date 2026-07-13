@@ -17,10 +17,12 @@
 
 ### Key Features (in priority order)
 
-1. **Smart JD parser** — paste raw job description text, client-side logic extracts company, role, salary, location, and tech tags using pattern matching
-2. **Kanban pipeline** — drag-and-drop board: `Saved → Applied → Interview → Offer → Rejected`
-3. **Interview prep** — curated question bank matched to detected tech tags (React, Node, SQL, etc.)
-4. **Follow-up reminder** — flags applications with no status update after 7 days
+1. **Smart JD Parser & Skill Extractor** — paste raw job description text; client-side logic extracts company, role, salary, location, and tech tags. Leverages an alias-aware skills dictionary and learns new custom tags per-user.
+2. **Kanban Pipeline** — drag-and-drop board: `Saved → Applied → Interview → Offer → Rejected`. Prompts for rejection reason via modal when dragging a card to `Rejected`.
+3. **Dashboard Weekly Stats** — a 4-tile summary showing: applied this week, active interviews, offers, and rejected this week.
+4. **Interview Prep** — curated question bank matched to detected tech tags (React, Node, SQL, etc.), displayed alongside inline notes.
+5. **Follow-up Reminder** — flags applications with no status update after 7 days, measured from the applied date (falling back to last updated).
+6. **User Profile & Privacy** — profile editing (display name and avatar image upload), data export (JSON download), and self-service account deletion.
 
 ---
 
@@ -119,28 +121,65 @@ jobtrackr/
 ```sql
 -- Users managed by Supabase Auth
 
-create table jobs (
-  id           uuid primary key default gen_random_uuid(),
-  user_id      uuid references auth.users(id) on delete cascade,
-  company      text not null,
-  role         text not null,
-  url          text,
-  description  text,
-  status       text default 'saved',        -- saved | applied | interview | offer | rejected
-  salary_range text,
-  location     text,
-  tags         text[],                       -- e.g. ['React', 'Remote', 'Startup']
-  notes        text,
-  applied_at   timestamptz,
-  last_updated timestamptz default now(),
-  created_at   timestamptz default now()
+-- 1. Profiles (auto-created on signup via trigger handle_new_user)
+create table public.profiles (
+  id          uuid primary key references auth.users(id) on delete cascade,
+  full_name   text,
+  avatar_url  text,
+  created_at  timestamptz not null default now(),
+  updated_at  timestamptz not null default now()
 );
 
--- RLS: users can only see their own data
-alter table jobs enable row level security;
+alter table public.profiles enable row level security;
+create policy "select own profile" on public.profiles for select using (auth.uid() = id);
+create policy "update own profile" on public.profiles for update using (auth.uid() = id);
+create policy "insert own profile" on public.profiles for insert with check (auth.uid() = id);
 
-create policy "Users own their jobs"
-  on jobs for all using (auth.uid() = user_id);
+-- 2. Jobs
+create table public.jobs (
+  id               uuid primary key default gen_random_uuid(),
+  user_id          uuid references auth.users(id) on delete cascade not null,
+  company          text not null,
+  role             text not null,
+  url              text,
+  description      text,
+  status           text not null default 'saved' check (status in ('saved','applied','interview','offer','rejected')),
+  salary_range     text,
+  location         text,
+  source           text,                         -- LinkedIn, JobStreet, Referral, etc.
+  rejection_reason text,                         -- Preset or skipped reasons
+  rejected_at      timestamptz,
+  tags             text[] not null default '{}',
+  notes            text,
+  applied_at       timestamptz,
+  last_updated     timestamptz not null default now(),
+  created_at       timestamptz not null default now()
+);
+
+alter table public.jobs enable row level security;
+create policy "Users can select their own jobs" on jobs for select using (auth.uid() = user_id);
+create policy "Users can insert their own jobs" on jobs for insert with check (auth.uid() = user_id);
+create policy "Users can update their own jobs" on jobs for update using (auth.uid() = user_id) with check (auth.uid() = user_id);
+create policy "Users can delete their own jobs" on jobs for delete using (auth.uid() = user_id);
+
+create index jobs_user_id_idx on jobs (user_id);
+create index jobs_status_idx on jobs (status);
+
+-- 3. User Tags (learned custom tags per user)
+create table public.user_tags (
+  id         uuid primary key default gen_random_uuid(),
+  user_id    uuid not null references auth.users(id) on delete cascade,
+  tag        text not null,
+  created_at timestamptz not null default now()
+);
+
+create unique index user_tags_user_tag_lower_idx on public.user_tags (user_id, lower(tag));
+create index user_tags_user_id_idx on public.user_tags (user_id);
+
+alter table public.user_tags enable row level security;
+create policy "user_tags_select_own" on public.user_tags for select using (auth.uid() = user_id);
+create policy "user_tags_insert_own" on public.user_tags for insert with check (auth.uid() = user_id);
+create policy "user_tags_delete_own" on public.user_tags for delete using (auth.uid() = user_id);
 ```
 
 > The `interview_prep` table is removed. Interview questions are generated client-side from `lib/interview-questions.ts` using the job's `tags` array — no DB storage needed.
@@ -162,6 +201,9 @@ export interface Job {
   status: JobStatus
   salary_range?: string
   location?: string
+  source?: string
+  rejection_reason?: string
+  rejected_at?: string
   tags: string[]
   notes?: string
   applied_at?: string
@@ -183,75 +225,46 @@ export interface InterviewQuestion {
   category: 'technical' | 'behavioral' | 'company' | 'rolefit'
   tip: string
 }
+
+export interface Profile {
+  id: string
+  full_name?: string
+  avatar_url?: string
+  created_at: string
+  updated_at: string
+}
 ```
 
 ---
 
 ## Smart Parser — How It Works
 
-No AI. All pattern matching in `lib/parser.ts`. Runs entirely in the browser.
+No AI. Uses alias-aware dictionary matching and custom tag learning. Runs entirely in the browser.
 
 ```ts
 // lib/parser.ts
 
-export function parseJobDescription(text: string): ParsedJob {
+import type { ParsedJob } from '@/types'
+import { matchDictionary, matchCustomTags, normalizeTag } from '@/lib/skills'
+
+export function parseJobDescription(text: string, customTags: string[] = []): ParsedJob {
   return {
     company:      extractCompany(text),
     role:         extractRole(text),
     salary_range: extractSalary(text),
     location:     extractLocation(text),
-    tags:         extractTags(text),
+    tags:         extractTags(text, customTags),
     description:  text.trim(),
   }
 }
 
 // --- Extraction helpers ---
+// Extracts role, salary, location, and company using custom pattern-matching,
+// with dedicated heuristics for Malaysian cities/states and role keywords.
 
-function extractRole(text: string): string {
-  // Match common job title patterns in first 5 lines
-  const lines = text.split('\n').slice(0, 5)
-  const titlePatterns = [
-    /(?:senior|junior|mid|lead|staff)?\s*(?:frontend|backend|fullstack|full.stack|software|web)\s*(?:engineer|developer|architect)/i,
-    /(?:react|node|python|java)\s*developer/i,
-  ]
-  for (const line of lines) {
-    for (const pattern of titlePatterns) {
-      const match = line.match(pattern)
-      if (match) return match[0].trim()
-    }
-  }
-  return lines[0]?.trim() ?? 'Unknown Role'
-}
-
-function extractSalary(text: string): string | undefined {
-  const match = text.match(/\$[\d,]+(?:k)?(?:\s*[-–]\s*\$?[\d,]+(?:k)?)?(?:\s*(?:\/yr|\/year|per year|annually))?/i)
-  return match?.[0]
-}
-
-function extractLocation(text: string): string | undefined {
-  const remoteMatch = text.match(/\b(remote|hybrid|on.?site|in.?office)\b/i)
-  if (remoteMatch) return remoteMatch[0]
-  const cityMatch = text.match(/\b([A-Z][a-z]+(?:,\s*[A-Z]{2})?)\b/)
-  return cityMatch?.[0]
-}
-
-function extractCompany(text: string): string {
-  const match = text.match(/(?:at|@|company[:\s]+|employer[:\s]+)\s*([A-Z][A-Za-z0-9\s&.,']+)/i)
-  return match?.[1]?.trim() ?? 'Unknown Company'
-}
-
-function extractTags(text: string): string[] {
-  const knownTags = [
-    'React', 'Next.js', 'Vue', 'Angular', 'TypeScript', 'JavaScript',
-    'Node.js', 'Express', 'Python', 'Django', 'FastAPI',
-    'PostgreSQL', 'MySQL', 'MongoDB', 'Redis', 'Supabase',
-    'AWS', 'GCP', 'Azure', 'Docker', 'Kubernetes', 'CI/CD',
-    'GraphQL', 'REST', 'Tailwind', 'CSS', 'HTML',
-    'Git', 'Agile', 'Scrum', 'Figma', 'Remote',
-  ]
-  return knownTags.filter(tag =>
-    new RegExp(`\\b${tag.replace('.', '\\.')}\\b`, 'i').test(text)
-  )
+function extractTags(text: string, customTags: string[] = []): string[] {
+  const merged = [...matchDictionary(text), ...matchCustomTags(text, customTags)].map(normalizeTag)
+  return [...new Set(merged)]
 }
 ```
 
@@ -439,9 +452,9 @@ Full detail in `docs/superpowers/specs/2026-07-03-jobtrackr-mvp-design.md` (Secu
 ### Reminder Feature Implementation
 
 Follow-up reminders are **in-app only**. Logic:
-- A job is "stale" if `status = 'applied'` AND `last_updated` is more than 7 days ago
-- Surface stale jobs as a badge count in the sidebar and a dedicated `/reminders` page
-- The check runs client-side on dashboard load — no cron job needed for MVP
+- A job is "stale" if `status = 'applied'` AND `applied_at` (falling back to `last_updated` if not set) is more than 7 days ago.
+- Surface stale jobs as a badge count (or status dot when sidebar is collapsed) in the sidebar and a dedicated `/reminders` page.
+- The check runs client-side on dashboard load — no cron job needed for MVP.
 
 ---
 
@@ -449,12 +462,12 @@ Follow-up reminders are **in-app only**. Logic:
 
 Build these. Nothing else until they work end-to-end.
 
-- [ ] Auth (login / logout / Google OAuth)
-- [ ] Add job via JD paste (client-side parse)
-- [ ] Add job manually (fallback form)
-- [ ] Kanban board with drag-and-drop
-- [ ] Job detail page
-- [ ] Interview prep panel (tag-matched questions from local bank)
-- [ ] Stale application reminder (in-app)
-- [ ] Responsive layout (mobile + desktop)
-- [ ] Deploy to Vercel with env vars configured
+- [x] Auth (login / logout / Google OAuth)
+- [x] Add job via JD paste (client-side parse)
+- [x] Add job manually (fallback form)
+- [x] Kanban board with drag-and-drop
+- [x] Job detail page
+- [x] Interview prep panel (tag-matched questions from local bank)
+- [x] Stale application reminder (in-app)
+- [x] Responsive layout (mobile + desktop)
+- [x] Deploy to Vercel with env vars configured

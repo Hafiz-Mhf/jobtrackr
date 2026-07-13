@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { toast } from 'sonner'
+import { Sparkles, ChevronRight, FileText } from 'lucide-react'
 import { useParser } from '@/hooks/useParser'
 import { useTags } from '@/contexts/TagsProvider'
 import { stagger, fadeUp } from '@/lib/animations'
@@ -48,26 +49,45 @@ export function ParseInput({ onParsed, onManual }: Props) {
     : []
 
   return (
-    <div className="bg-surface border border-[var(--color-border)] rounded-xl p-6">
-      <h2 className="text-lg font-semibold mb-3">Paste a job description</h2>
-      <textarea
-        value={text}
-        onChange={(e) => setText(e.target.value)}
-        rows={8}
-        placeholder={'Senior Frontend Engineer at Stripe...\n\nPaste the full job description for best results — more text means better extraction.'}
-        className="w-full border border-[var(--color-border)] rounded-md p-3 text-sm font-mono"
-      />
-      <div className="flex gap-3 mt-4">
+    <div className="bg-surface border border-[var(--color-border)] rounded-2xl p-6 md:p-8 space-y-6 shadow-card transition-all duration-300 hover:shadow-lg">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+        <label className="font-semibold text-brand-text flex items-center gap-2 text-sm md:text-base" htmlFor="jd-input">
+          <FileText className="size-4 text-accent" />
+          Job Description
+        </label>
+        <span className="text-[10px] text-brand-muted px-2 py-1 bg-surface-muted rounded-md uppercase tracking-wider font-semibold">
+          Supports LinkedIn, Indeed, Glassdoor
+        </span>
+      </div>
+
+      <div className="relative group">
+        <textarea
+          id="jd-input"
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          placeholder="Paste the job description text or link here... More text means better automatic extraction."
+          className="w-full min-h-[320px] p-6 bg-surface border border-[var(--color-border)] rounded-xl focus:ring-4 focus:ring-accent/5 focus:border-accent focus:outline-none transition-all duration-300 resize-none font-sans text-sm leading-relaxed text-brand-text placeholder:text-text-muted"
+        />
+      </div>
+
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-2">
+        <button
+          type="button"
+          onClick={onManual}
+          className="text-accent font-semibold text-sm hover:underline flex items-center gap-1 group w-full sm:w-auto"
+        >
+          Fill details manually
+          <ChevronRight className="size-4 group-hover:translate-x-1 transition-transform" />
+        </button>
+
         <button
           type="button"
           onClick={handleExtract}
           disabled={!text.trim()}
-          className="bg-accent text-white text-sm font-semibold px-4 py-2 rounded-md disabled:opacity-50"
+          className="w-full sm:w-auto px-6 py-3.5 bg-accent text-white font-semibold text-sm rounded-xl hover:bg-accent-hover disabled:opacity-50 transition-all active:scale-[0.98] shadow-md flex items-center justify-center gap-2"
         >
-          Extract Details
-        </button>
-        <button type="button" onClick={onManual} className="text-sm text-brand-muted underline">
-          Fill manually
+          <Sparkles className="size-4" />
+          Extract Job Details
         </button>
       </div>
 

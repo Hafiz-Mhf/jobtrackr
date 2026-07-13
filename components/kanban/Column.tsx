@@ -18,23 +18,27 @@ export function Column({ status, jobs }: Props) {
   return (
     <div
       ref={setNodeRef}
-      className={`min-w-0 min-h-80 flex flex-col bg-surface-muted border border-l-4 border-[var(--color-border)] ${accent.border} rounded-lg p-4 shadow-sm`}
+      className="flex-1 min-w-[240px] max-w-[285px] min-h-[500px] flex flex-col bg-surface-muted/50 border border-[var(--color-border)] rounded-2xl p-3 shadow-sm"
     >
-      <div className="flex items-center justify-between mb-3 text-sm font-semibold text-brand-muted uppercase tracking-wide">
-        <span className="flex items-center gap-2">
-          <span className={`size-2 rounded-full ${accent.dot}`} aria-hidden="true" />
+      <div className="flex items-center justify-between mb-3 text-[13px] font-bold text-brand-muted uppercase tracking-wider px-1">
+        <span className="flex items-center gap-1.5 text-brand-text">
+          <span className={`size-1.5 rounded-full ${accent.dot}`} aria-hidden="true" />
           {STATUS_LABELS[status]}
         </span>
-        <span>({jobs.length})</span>
+        <span className="bg-surface border border-[var(--color-border)] px-1.5 py-0.5 rounded-md font-mono text-[10px] text-brand-muted">
+          {jobs.length}
+        </span>
       </div>
       <SortableContext items={jobs.map((j) => j.id)} strategy={verticalListSortingStrategy}>
-        {jobs.length === 0 ? (
-          <div className="flex-1 flex items-center justify-center border border-dashed border-[var(--color-border)] rounded-md p-4 text-center text-xs text-brand-muted">
-            {STATUS_EMPTY_COPY[status]}
-          </div>
-        ) : (
-          jobs.map((job) => <JobCard key={job.id} job={job} />)
-        )}
+        <div className="flex-1 flex flex-col gap-2.5 min-h-[300px]">
+          {jobs.length === 0 ? (
+            <div className="flex-1 flex items-center justify-center border border-dashed border-[var(--color-border)] rounded-2xl p-4 text-center text-[11px] text-brand-muted leading-relaxed">
+              {STATUS_EMPTY_COPY[status]}
+            </div>
+          ) : (
+            jobs.map((job) => <JobCard key={job.id} job={job} />)
+          )}
+        </div>
       </SortableContext>
     </div>
   )

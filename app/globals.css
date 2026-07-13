@@ -201,3 +201,24 @@ body::before {
     @apply font-sans;
   }
 }
+
+@utility glass-panel {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(232, 230, 245, 0.8);
+}
+
+@utility card-hover {
+  transition: transform 0.2s ease-out, box-shadow 0.2s ease-out;
+  cursor: pointer;
+
+  &:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 24px rgba(91, 78, 232, 0.08);
+  }
+
+  &:active {
+    transform: scale(0.98) rotate(0.5deg);
+  }
+}

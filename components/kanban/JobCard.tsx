@@ -1,9 +1,8 @@
-'use client'
-
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import Link from 'next/link'
-import type { Job } from '@/types'
+import { Briefcase, Terminal, Palette, Layers, Code } from 'lucide-react'
+import type { Job, JobStatus } from '@/types'
 import { formatDate } from '@/lib/utils'
 import { cn } from '@/lib/utils'
 
@@ -11,13 +10,95 @@ interface Props {
   job: Job
 }
 
+const STATUS_BAR_COLOR: Record<JobStatus, string> = {
+  saved: 'bg-[var(--color-saved)]',
+  applied: 'bg-[var(--color-applied)]',
+  interview: 'bg-[var(--color-interview)]',
+  offer: 'bg-[var(--color-offer)]',
+  rejected: 'bg-[var(--color-rejected)]',
+}
+
+const STATUS_ICON_COLOR: Record<JobStatus, string> = {
+  saved: 'text-[var(--color-saved)]',
+  applied: 'text-[var(--color-applied)]',
+  interview: 'text-[var(--color-interview)]',
+  offer: 'text-[var(--color-offer)]',
+  rejected: 'text-[var(--color-rejected)]',
+}
+
+function getJobIcon(role: string, tags: string[]) {
+  const r = role.toLowerCase()
+  const merged = [...tags.map((t) => t.toLowerCase()), r]
+  if (
+    merged.some(
+      (t) =>
+        t.includes('design') ||
+        t.includes('creative') ||
+        t.includes('figma') ||
+        t.includes('ui') ||
+        t.includes('ux') ||
+        t.includes('product')
+    )
+  ) {
+    return Palette
+  }
+  if (
+    merged.some(
+      (t) =>
+        t.includes('frontend') ||
+        t.includes('react') ||
+        t.includes('web') ||
+        t.includes('next.js') ||
+        t.includes('typescript') ||
+        t.includes('javascript') ||
+        t.includes('html') ||
+        t.includes('css')
+    )
+  ) {
+    return Code
+  }
+  if (
+    merged.some(
+      (t) =>
+        t.includes('backend') ||
+        t.includes('node') ||
+        t.includes('api') ||
+        t.includes('database') ||
+        t.includes('sql') ||
+        t.includes('python') ||
+        t.includes('go') ||
+        t.includes('terminal')
+    )
+  ) {
+    return Terminal
+  }
+  if (
+    merged.some(
+      (t) =>
+        t.includes('architect') ||
+        t.includes('system') ||
+        t.includes('infra') ||
+        t.includes('devops') ||
+        t.includes('cloud') ||
+        t.includes('aws')
+    )
+  ) {
+    return Layers
+  }
+  return Briefcase
+}
+
 export function JobCard({ job }: Props) {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: job.id })
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: job.id,
+  })
 
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
   }
+
+  const IconComponent = getJobIcon(job.role, job.tags)
 
   return (
     <div
@@ -27,24 +108,45 @@ export function JobCard({ job }: Props) {
       {...listeners}
       data-dragging={isDragging}
       className={cn(
-        'bg-surface border border-[var(--color-border)] rounded-md p-4 mb-3 cursor-grab shadow-card hover:shadow-card-hover hover:-translate-y-px transition-shadow',
-        isDragging && 'shadow-card-drag rotate-1 scale-[1.02] border-accent'
+        'relative overflow-hidden bg-surface border border-[var(--color-border)] rounded-2xl p-3 cursor-grab shadow-card card-hover transition-all duration-200 select-none',
+        isDragging && 'shadow-card-drag rotate-1 scale-[1.02] border-accent z-50'
       )}
     >
+      <div className={cn('absolute top-0 left-0 w-full h-1', STATUS_BAR_COLOR[job.status])} />
       <Link href={`/jobs/${job.id}`} onClick={(e) => isDragging && e.preventDefault()}>
-        <p className="text-base font-semibold text-brand-text">{job.company}</p>
-        <p className="text-sm text-brand-muted mt-0.5">{job.role}</p>
-        {job.tags.length > 0 && (
-          <div className="flex flex-wrap gap-1.5 mt-3">
-            {job.tags.slice(0, 4).map((tag) => (
-              <span key={tag} className="font-mono text-xs px-2 py-0.5 rounded-full bg-accent-light text-accent font-medium">
-                {tag}
-              </span>
-            ))}
+        <div className="flex gap-2.5 mb-2.5">
+          <div className="w-8 h-8 rounded bg-surface-muted flex items-center justify-center shrink-0 border border-[var(--color-border)]/50">
+            <IconComponent className={cn('size-4.5', STATUS_ICON_COLOR[job.status])} />
           </div>
-        )}
-        <div className="flex items-center gap-2 mt-3 pt-3 border-t border-[var(--color-border)] text-xs text-brand-muted font-mono">
-          {job.applied_at ? `Applied ${formatDate(job.applied_at)}` : formatDate(job.last_updated)}
+          <div className="min-w-0 flex-1">
+            <h4
+              className="font-bold text-brand-text text-[13px] leading-tight truncate"
+              title={job.role}
+            >
+              {job.role}
+            </h4>
+            <p className="text-[11px] text-brand-muted mt-0.5 truncate font-medium" title={job.company}>
+              {job.company}
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-center justify-between mt-2.5 text-[10px] text-brand-muted font-mono">
+          <span className="truncate max-w-[130px]">
+            {job.applied_at ? `Applied ${formatDate(job.applied_at)}` : formatDate(job.last_updated)}
+          </span>
+          {job.tags.length > 0 && (
+            <div className="flex flex-wrap gap-1 shrink-0">
+              {job.tags.slice(0, 2).map((tag) => (
+                <span
+                  key={tag}
+                  className="bg-accent-light/60 text-accent px-1.5 py-0 rounded text-[9px] font-mono font-semibold"
+                >
+                  {tag}
+                </span>
+              ))}
+            </div>
+          )}
         </div>
       </Link>
     </div>
