@@ -14,7 +14,7 @@ export function parseJobDescription(text: string, customTags: string[] = []): Pa
 
 // Words that signal a line is a job title rather than a company or heading.
 const ROLE_KEYWORDS =
-  /\b(engineer|developer|architect|manager|analyst|consultant|designer|specialist|administrator|coordinator|scientist|technician|programmer|lead|director|intern|associate|recruiter|accountant|auditor|support|helpdesk|help\s?desk)\b/i
+  /\b(engineer|developer|architect|manager|analyst|consultant|designer|specialist|administrator|coordinator|scientist|technician|programmer|lead|director|intern|associate|recruiter|accountant|auditor|support|helpdesk|help\s?desk|qa|tester|scrum\s*master|sre|reliability|ui\/ux|product\s*owner|product\s*manager)\b/i
 
 const LEGAL_SUFFIX_REGEX = /\b(Sdn\s*Bhd|Bhd|LLC|Ltd|Inc|Corp|Corporation|Pte\s*Ltd)\b/i
 const NOISE_LINES = /^(apply|share|save|posted|about|requirements|description|responsibilities|job|overview|company|employer|organization|search|sign\s*in|login|register)\b/i
@@ -42,13 +42,9 @@ function nonEmptyLines(text: string): string[] {
 }
 
 function cleanRole(s: string): string {
-  // Take the first line and drop a trailing "[Location]" tag (common on job boards),
-  // then any "at Company" / " - Location" / " | X" suffix.
-  return s
-    .split('\n')[0]
-    .replace(/\s*\[.*$/, '')
-    .replace(/\s+(?:at|@|[-–|·])\s+.*$/i, '')
-    .trim()
+  // Split by pipe, bullet, dash delimiters and take the first portion
+  const base = s.split('\n')[0].split(/\s*(?:\||·|•|–|-|—)\s*/)[0]
+  return base.replace(/\s*\[.*$/, '').replace(/\s+(?:at|@)\s+.*$/i, '').trim()
 }
 
 function cleanValue(s: string): string {
@@ -62,25 +58,28 @@ function extractRole(text: string): string {
   const label = text.match(/^\s*(?:job\s*title|title|position|role)\s*[:\-]\s*(.+)$/im)
   if (label?.[1]) return cleanRole(label[1])
 
-  // 2. Specific engineering/tech title patterns
-  const titlePatterns = [
-    /(?:senior|junior|mid|lead|staff|principal)?\s*(?:frontend|backend|fullstack|full.stack|software|web|mobile|data|devops|cloud|ml|ai)\s*(?:engineer|developer|architect|scientist)/i,
-    /(?:react|node|python|java|golang|ruby|php|\.net)\s*developer/i,
-  ]
-  for (const line of lines.slice(0, 6)) {
-    for (const pattern of titlePatterns) {
-      const match = line.match(pattern)
-      if (match) return match[0].trim()
-    }
+  // 2. Specific engineering/tech/product title patterns (including level prefixes)
+  const levelPrefix = '(?:senior|junior|mid|lead|staff|principal|associate|director|head\\s+of)?\\s*'
+  const rolePattern = '(?:frontend|backend|fullstack|full\\.stack|software|web|mobile|data|devops|cloud|ml|ai|qa|test|ui/ux|product|sre|system|network)'
+  const roleKeyword = '(?:engineer|developer|architect|scientist|designer|manager|specialist|analyst|owner|lead|scrum\\s*master)'
+  const pattern = new RegExp(`${levelPrefix}${rolePattern}\\s*${roleKeyword}`, 'i')
+
+  for (const line of lines.slice(0, 8)) {
+    const match = line.match(pattern)
+    if (match) return cleanRole(match[0])
   }
 
   // 3. First short line that reads like a job title (contains a role keyword)
   for (const line of lines.slice(0, 8)) {
-    if (line.length <= 60 && ROLE_KEYWORDS.test(line)) return cleanRole(line)
+    if (line.length <= 80 && ROLE_KEYWORDS.test(line)) return cleanRole(line)
   }
 
-  // 4. Fallback: first non-empty line
-  return lines[0] ?? 'Unknown Role'
+  // 4. Fallback: first non-empty line (excluding noise)
+  for (const line of lines.slice(0, 5)) {
+    if (!NOISE_LINES.test(line) && line.length <= 60) return cleanRole(line)
+  }
+
+  return lines[0] ? cleanRole(lines[0]) : 'Unknown Role'
 }
 
 function extractSalary(text: string): string | undefined {

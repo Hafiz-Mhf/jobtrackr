@@ -136,4 +136,19 @@ describe('parseJobDescription', () => {
     const result = parseJobDescription('Apply Now\nPosted 3 days ago\nStripe\nSenior Engineer')
     expect(result.company).toBe('Stripe')
   })
+
+  it('splits pipeline delimiters to isolate clean role title', () => {
+    const result = parseJobDescription('Senior Frontend Developer | Remote | Kuala Lumpur\nJoin us...')
+    expect(result.role).toBe('Senior Frontend Developer')
+  })
+
+  it('matches product/design roles with seniority level prefixes', () => {
+    const result = parseJobDescription('Lead UI/UX Designer\nWe are looking for...')
+    expect(result.role).toBe('Lead UI/UX Designer')
+  })
+
+  it('correctly extracts Scrum Master or QA role on the second line', () => {
+    const result = parseJobDescription('Deloitte\nSenior Scrum Master\nWe are looking for...')
+    expect(result.role).toBe('Senior Scrum Master')
+  })
 })
