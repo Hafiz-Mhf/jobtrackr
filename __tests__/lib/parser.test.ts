@@ -194,4 +194,10 @@ describe('parseJobDescription', () => {
     const result = parseJobDescription('Great role at our Petaling Jaya office. Hybrid schedule available.')
     expect(result.location).toBe('Petaling Jaya (Hybrid)')
   })
+
+  it('prevents role title from duplicating company name on single-word or short inputs', () => {
+    const result = parseJobDescription('Deloitte')
+    expect(result.company).toBe('Deloitte')
+    expect(result.role).toBe('Unknown Role')
+  })
 })

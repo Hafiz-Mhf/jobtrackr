@@ -2,9 +2,18 @@ import type { ParsedJob } from '@/types'
 import { matchDictionary, matchCustomTags, normalizeTag } from '@/lib/skills'
 
 export function parseJobDescription(text: string, customTags: string[] = []): ParsedJob {
+  const company = extractCompany(text)
+  let role = extractRole(text)
+
+  // Safeguard: If the extracted role matches the company exactly on a single-line input, fallback to "Unknown Role"
+  const lines = text.split('\n').map((l) => l.trim()).filter(Boolean)
+  if (role.toLowerCase() === company.toLowerCase() && lines.length <= 1) {
+    role = 'Unknown Role'
+  }
+
   return {
-    company:      extractCompany(text),
-    role:         extractRole(text),
+    company,
+    role,
     salary_range: extractSalary(text),
     location:     extractLocation(text),
     tags:         extractTags(text, customTags),
