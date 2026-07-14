@@ -1,17 +1,11 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState } from 'react'
 import { motion } from 'framer-motion'
 import type { Job, JobStatus, ParsedJob } from '@/types'
 import { JOB_STATUSES, STATUS_LABELS, APPLICATION_SOURCES, REJECTION_REASONS } from '@/lib/constants'
 import { stagger, fadeUp } from '@/lib/animations'
 import { useTags } from '@/contexts/TagsProvider'
-
-interface ClearbitCompany {
-  name: string
-  domain: string
-  logo: string
-}
 
 export interface JobFormValues {
   company: string
@@ -60,68 +54,8 @@ export function JobForm({ initial, onSubmit, submitLabel = 'Save job', reveal = 
   const [error, setError] = useState<string | null>(null)
   const { addLocal } = useTags()
 
-  // Clearbit suggestions state
-  const [suggestions, setSuggestions] = useState<ClearbitCompany[]>([])
-  const [showSuggestions, setShowSuggestions] = useState(false)
-  const suggestionsRef = useRef<HTMLDivElement>(null)
-
   function set<K extends keyof JobFormValues>(key: K, value: JobFormValues[K]) {
     setValues((v) => ({ ...v, [key]: value }))
-  }
-
-  // Debounced API fetch for Clearbit Autocomplete suggestions
-  useEffect(() => {
-    const query = values.company.trim()
-    if (query.length < 2 || (typeof navigator !== 'undefined' && !navigator.onLine)) {
-      setSuggestions([])
-      return
-    }
-
-    const controller = new AbortController()
-    const delayDebounceFn = setTimeout(async () => {
-      try {
-        const response = await fetch(
-          `https://autocomplete.clearbit.com/v1/companies/suggest?query=${encodeURIComponent(query)}`,
-          { signal: controller.signal }
-        )
-        if (response.ok) {
-          const data: ClearbitCompany[] = await response.json()
-          setSuggestions(data)
-        }
-      } catch (err: any) {
-        if (err.name !== 'AbortError') {
-          // Silent fallback — do not print stack trace to avoid developer console clutter
-          setSuggestions([])
-        }
-      }
-    }, 250)
-
-    return () => {
-      clearTimeout(delayDebounceFn)
-      controller.abort()
-    }
-  }, [values.company])
-
-  // Handle click outside to close suggestions list
-  useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (suggestionsRef.current && !suggestionsRef.current.contains(event.target as Node)) {
-        setShowSuggestions(false)
-      }
-    }
-    document.addEventListener('mousedown', handleClickOutside)
-    return () => document.removeEventListener('mousedown', handleClickOutside)
-  }, [])
-
-  function handleSelectSuggestion(suggestion: ClearbitCompany) {
-    setValues((v) => ({
-      ...v,
-      company: suggestion.name,
-      // Autofill URL if empty or a placeholder
-      url: v.url.trim() === '' ? `https://${suggestion.domain}` : v.url,
-    }))
-    setSuggestions([])
-    setShowSuggestions(false)
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -151,52 +85,14 @@ export function JobForm({ initial, onSubmit, submitLabel = 'Save job', reveal = 
       animate="visible"
     >
       <motion.div variants={fadeUp} className="grid grid-cols-2 gap-4">
-        <div className="relative" ref={suggestionsRef}>
+        <div>
           <label htmlFor="job-company" className="text-sm font-medium">Company *</label>
           <input
             id="job-company"
             value={values.company}
-            onChange={(e) => {
-              set('company', e.target.value)
-              setShowSuggestions(true)
-            }}
-            onFocus={() => setShowSuggestions(true)}
+            onChange={(e) => set('company', e.target.value)}
             className="w-full border border-[var(--color-border)] bg-surface rounded-md px-3 py-2 text-sm mt-1 focus:border-accent focus:ring-2 focus:ring-accent/20 focus:outline-none transition-colors"
-            autoComplete="off"
           />
-
-          {showSuggestions && suggestions.length > 0 && (
-            <div className="absolute left-0 right-0 mt-1 bg-surface border border-[var(--color-border)] rounded-xl shadow-lg max-h-56 overflow-y-auto z-50">
-              {suggestions.map((s, idx) => (
-                <button
-                  key={idx}
-                  type="button"
-                  onClick={() => handleSelectSuggestion(s)}
-                  className="w-full flex items-center gap-3 px-3 py-2 text-left text-sm hover:bg-surface-muted transition-colors cursor-pointer border-b last:border-b-0 border-[var(--color-border)]/50"
-                >
-                  {s.logo ? (
-                    <img
-                      src={s.logo}
-                      alt={`${s.name} logo`}
-                      className="size-6 rounded border border-[var(--color-border)] object-contain shrink-0"
-                      onError={(e) => {
-                        // fallback if logo fails to load
-                        (e.target as HTMLImageElement).style.display = 'none'
-                      }}
-                    />
-                  ) : (
-                    <div className="size-6 rounded bg-accent-light text-accent flex items-center justify-center text-xs font-bold shrink-0">
-                      {s.name.charAt(0).toUpperCase()}
-                    </div>
-                  )}
-                  <div className="min-w-0 flex-1">
-                    <p className="font-semibold text-brand-text truncate leading-tight">{s.name}</p>
-                    <p className="text-[10px] text-brand-muted truncate mt-0.5">{s.domain}</p>
-                  </div>
-                </button>
-              ))}
-            </div>
-          )}
         </div>
         <div>
           <label htmlFor="job-role" className="text-sm font-medium">Role *</label>
