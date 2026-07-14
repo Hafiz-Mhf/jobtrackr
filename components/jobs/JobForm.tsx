@@ -72,26 +72,34 @@ export function JobForm({ initial, onSubmit, submitLabel = 'Save job', reveal = 
   // Debounced API fetch for Clearbit Autocomplete suggestions
   useEffect(() => {
     const query = values.company.trim()
-    if (query.length < 2) {
+    if (query.length < 2 || (typeof navigator !== 'undefined' && !navigator.onLine)) {
       setSuggestions([])
       return
     }
 
+    const controller = new AbortController()
     const delayDebounceFn = setTimeout(async () => {
       try {
         const response = await fetch(
-          `https://autocomplete.clearbit.com/v1/companies/suggest?query=${encodeURIComponent(query)}`
+          `https://autocomplete.clearbit.com/v1/companies/suggest?query=${encodeURIComponent(query)}`,
+          { signal: controller.signal }
         )
         if (response.ok) {
           const data: ClearbitCompany[] = await response.json()
           setSuggestions(data)
         }
-      } catch (err) {
-        console.error('Clearbit fetch failed:', err)
+      } catch (err: any) {
+        if (err.name !== 'AbortError') {
+          // Silent fallback — do not print stack trace to avoid developer console clutter
+          setSuggestions([])
+        }
       }
     }, 250)
 
-    return () => clearTimeout(delayDebounceFn)
+    return () => {
+      clearTimeout(delayDebounceFn)
+      controller.abort()
+    }
   }, [values.company])
 
   // Handle click outside to close suggestions list
