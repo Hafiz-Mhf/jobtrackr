@@ -151,4 +151,47 @@ describe('parseJobDescription', () => {
     const result = parseJobDescription('Deloitte\nSenior Scrum Master\nWe are looking for...')
     expect(result.role).toBe('Senior Scrum Master')
   })
+
+  // --- Task 4: Multi-currency salary ---
+
+  it('extracts RM salary range with monthly frequency', () => {
+    const result = parseJobDescription('Compensation: RM 5,000 - RM 8,500 / month')
+    expect(result.salary_range).toContain('RM')
+    expect(result.salary_range).toContain('5,000')
+    expect(result.salary_range).toContain('8,500')
+  })
+
+  it('extracts SGD salary with k multiplier and per month', () => {
+    const result = parseJobDescription('Salary: SGD 6k to 9k per month')
+    expect(result.salary_range).toContain('SGD')
+    expect(result.salary_range).toContain('6k')
+  })
+
+  it('extracts GBP hourly rate', () => {
+    const result = parseJobDescription('Offer: £45/hour on contract')
+    expect(result.salary_range).toContain('£45')
+    expect(result.salary_range).toContain('hour')
+  })
+
+  it('still extracts USD salary range (existing behavior)', () => {
+    const result = parseJobDescription('Pay: $130k - $160k per year')
+    expect(result.salary_range).toContain('130k')
+  })
+
+  // --- Task 5: Combined location + work arrangement ---
+
+  it('combines explicit location label with work arrangement found in text', () => {
+    const result = parseJobDescription('Office Location: George Town\nThis is a Hybrid role.')
+    expect(result.location).toBe('George Town (Hybrid)')
+  })
+
+  it('extracts WFH as Remote', () => {
+    const result = parseJobDescription('This role is WFH.\nApply now.')
+    expect(result.location).toBe('Remote')
+  })
+
+  it('combines Malaysian city with work mode', () => {
+    const result = parseJobDescription('Great role at our Petaling Jaya office. Hybrid schedule available.')
+    expect(result.location).toBe('Petaling Jaya (Hybrid)')
+  })
 })

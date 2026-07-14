@@ -83,26 +83,56 @@ function extractRole(text: string): string {
 }
 
 function extractSalary(text: string): string | undefined {
-  const match = text.match(/\$[\d,]+(?:k)?(?:\s*[-–]\s*\$?[\d,]+(?:k)?)?(?:\s*(?:\/yr|\/year|per year|annually))?/i)
+  const salaryRegex = /(?:RM|MYR|SGD|USD|\$|£|€|¥|Rs)\s*\d+(?:[\d,.]*\d)?\s*[kK]?(?:\s*(?:-|–|to)\s*(?:RM|MYR|SGD|USD|\$|£|€|¥|Rs)?\s*\d+(?:[\d,.]*\d)?\s*[kK]?)?(?:\s*(?:\/|per\s+)?(?:yr|year|annually|mo|month|monthly|hr|hour|hourly))?/i
+  const match = text.match(salaryRegex)
   return match?.[0]
 }
 
+const WORK_MODE_REGEX = /\b(remote|hybrid|on[.\-\s]?site|onsite|in[.\-\s]?office|office[\-\s]?based|wfh|work\s+from\s+home)\b/i
+
+function normalizeWorkMode(raw: string): string {
+  const lower = raw.toLowerCase().replace(/[\s.\-]+/g, '')
+  if (lower === 'wfh' || lower === 'workfromhome') return 'Remote'
+  if (lower === 'onsite' || lower === 'inoffice' || lower === 'officebased') return 'On-site'
+  if (lower === 'hybrid') return 'Hybrid'
+  if (lower === 'remote') return 'Remote'
+  return raw.charAt(0).toUpperCase() + raw.slice(1)
+}
+
 function extractLocation(text: string): string | undefined {
+  // Detect work mode anywhere in text
+  const workModeMatch = text.match(WORK_MODE_REGEX)
+  const workMode = workModeMatch ? normalizeWorkMode(workModeMatch[1]) : undefined
+
   // 1. Explicit label: "Location:", "Based in:", "Office:"
-  const label = text.match(/^\s*(?:location|based in|office|work location)\s*[:\-]\s*(.+)$/im)
-  if (label?.[1]) return cleanValue(label[1])
+  const label = text.match(/^\s*(?:location|based in|office|office location|work location)\s*[:\-]\s*(.+)$/im)
+  if (label?.[1]) {
+    const loc = cleanValue(label[1])
+    if (workMode && !new RegExp(workMode, 'i').test(loc)) {
+      return `${loc} (${workMode})`
+    }
+    return loc
+  }
 
   // 2. Known Malaysian city / state
   const myCity = matchMalaysianLocation(text)
-  if (myCity) return myCity
+  if (myCity) {
+    if (workMode) return `${myCity} (${workMode})`
+    return myCity
+  }
 
-  // 3. Work-mode keyword
-  const remoteMatch = text.match(/\b(remote|hybrid|on.?site|in.?office)\b/i)
-  if (remoteMatch) return remoteMatch[0]
-
-  // 4. "City, ST" / "City, Country" — require the comma so a bare capitalised word isn't mistaken for a place
+  // 3. "City, ST" / "City, Country"
   const cityMatch = text.match(/\b([A-Z][a-z]+(?:\s[A-Z][a-z]+)*,\s*(?:[A-Z]{2,}|[A-Z][a-z]+))\b/)
-  return cityMatch?.[1]
+  if (cityMatch?.[1]) {
+    const geo = cityMatch[1]
+    if (workMode && !new RegExp(workMode, 'i').test(geo)) {
+      return `${geo} (${workMode})`
+    }
+    return geo
+  }
+
+  // 4. Work-mode keyword only
+  return workMode
 }
 
 function extractCompany(text: string): string {
