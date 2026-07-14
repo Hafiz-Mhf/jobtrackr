@@ -15,12 +15,23 @@ function escapeRegex(s: string): string {
 // so prose like "go above", "the rest", "excel at" doesn't produce phantom tags.
 const CASE_SENSITIVE_TERMS = new Set(['Go', 'REST', 'SAP', 'Word', 'Excel', 'Spring'])
 
+function compileTagRegex(tag: string): RegExp {
+  const escaped = escapeRegex(tag)
+  const hasSpecialChar = /[^a-zA-Z0-9\s]/.test(tag)
+  const flags = CASE_SENSITIVE_TERMS.has(tag) ? '' : 'i'
+  if (hasSpecialChar) {
+    // Symbol-safe boundary: matches start of text, whitespace, or punctuation on the left,
+    // and end of text, whitespace, or punctuation on the right.
+    return new RegExp(`(?:^|\\s|[.,;!?()[\\]{}'"])${escaped}(?=$|\\s|[.,;!?()[\\]{}'"])`, flags)
+  }
+  return new RegExp(`\\b${escaped}\\b`, flags)
+}
+
 // Compile one regex per term ONCE at module load, each mapped to its canonical.
 const COMPILED: { canonical: string; re: RegExp }[] = []
 for (const entry of SKILLS) {
   for (const term of [entry.canonical, ...entry.aliases]) {
-    const flags = CASE_SENSITIVE_TERMS.has(term) ? '' : 'i'
-    COMPILED.push({ canonical: entry.canonical, re: new RegExp(`\\b${escapeRegex(term)}\\b`, flags) })
+    COMPILED.push({ canonical: entry.canonical, re: compileTagRegex(term) })
   }
 }
 

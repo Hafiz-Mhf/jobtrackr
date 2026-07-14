@@ -56,4 +56,9 @@ describe('skills dictionary', () => {
     expect(matchDictionary('Experience in Go and REST APIs')).toEqual(expect.arrayContaining(['Go', 'REST']))
     expect(matchDictionary('Advanced Excel and Word skills')).toEqual(expect.arrayContaining(['Excel', 'Word']))
   })
+
+  it('matches symbols like C++, C#, and .NET correctly without being blocked by word boundaries', () => {
+    expect(matchDictionary('We are looking for a C++ developer with .NET experience')).toEqual(expect.arrayContaining(['C++', '.NET']))
+    expect(matchDictionary('Writing clean C# code.')).toContain('C#')
+  })
 })
