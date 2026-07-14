@@ -4,12 +4,15 @@ import { use, useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { ArrowLeft, ChevronDown, ExternalLink, Pencil, Trash2, FileText, Share2, Palette, Code, Terminal, Layers, Briefcase, Mail } from 'lucide-react'
+import { motion } from 'framer-motion'
 import { useJobs } from '@/hooks/useJobs'
 import { StatusBadge } from '@/components/jobs/StatusBadge'
 import { PrepPanel } from '@/components/prep/PrepPanel'
 import { JobForm, type JobFormValues } from '@/components/jobs/JobForm'
 import { JOB_STATUSES, STATUS_LABELS } from '@/lib/constants'
 import { formatDate, cn } from '@/lib/utils'
+import { stagger, fadeUp } from '@/lib/animations'
+import { JobDetailSkeleton } from '@/components/ui/Skeleton'
 import type { JobStatus } from '@/types'
 
 function summaryPreview(description: string, company: string, role: string): string {
@@ -56,7 +59,7 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
     }
   }, [job])
 
-  if (loading) return <div className="p-6 text-sm text-brand-muted">Loading...</div>
+  if (loading) return <JobDetailSkeleton />
   if (!job) return <div className="p-6 text-sm text-brand-muted">Job not found.</div>
 
   async function handleUpdate(values: JobFormValues) {
@@ -104,9 +107,14 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
   const IconComponent = getJobIcon(job.role, job.tags)
 
   return (
-    <div className="p-6 max-w-max-content-width mx-auto flex flex-col gap-6">
+    <motion.div
+      initial="hidden"
+      animate="visible"
+      variants={stagger(0.06)}
+      className="p-6 max-w-max-content-width mx-auto flex flex-col gap-6"
+    >
       {/* Top sticky navigation bar */}
-      <div className="flex items-center justify-between pb-4 border-b border-[var(--color-border)]">
+      <motion.div variants={fadeUp} className="flex items-center justify-between pb-4 border-b border-[var(--color-border)]">
         <div className="flex items-center gap-3">
           <Link
             href="/dashboard"
@@ -119,10 +127,10 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
             Applications / {job.company}
           </span>
         </div>
-      </div>
+      </motion.div>
 
       {/* Page Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 bg-surface border border-[var(--color-border)] rounded-2xl p-6 shadow-card">
+      <motion.div variants={fadeUp} className="flex flex-col md:flex-row md:items-center justify-between gap-6 bg-surface border border-[var(--color-border)] rounded-2xl p-6 shadow-card">
         <div className="flex items-center gap-5">
           <div className="w-16 h-16 rounded-2xl bg-surface-muted flex items-center justify-center border border-[var(--color-border)] shadow-sm shrink-0">
             <IconComponent className="size-8 text-accent" />
@@ -174,10 +182,10 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
             </select>
           </div>
         </div>
-      </div>
+      </motion.div>
 
       {/* Main Grid Layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+      <motion.div variants={fadeUp} className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         {/* Left Column: Role description and Notes */}
         <div className="lg:col-span-7 flex flex-col gap-6">
           {/* About the Role */}
@@ -318,7 +326,7 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
           {/* Interview Prep Questions */}
           <PrepPanel tags={job.tags} />
         </div>
-      </div>
-    </div>
+      </motion.div>
+    </motion.div>
   )
 }

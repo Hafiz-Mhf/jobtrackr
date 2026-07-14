@@ -3,6 +3,7 @@
 import { useDroppable } from '@dnd-kit/core'
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { Bookmark, Send, Calendar, Award, XCircle } from 'lucide-react'
+import Link from 'next/link'
 import type { Job, JobStatus } from '@/types'
 import { STATUS_LABELS, STATUS_EMPTY_COPY, STATUS_ACCENT } from '@/lib/constants'
 import { JobCard } from './JobCard'
@@ -36,7 +37,7 @@ export function Column({ status, jobs }: Props) {
   return (
     <div
       ref={setNodeRef}
-      className="flex-1 min-w-[240px] max-w-[285px] min-h-[500px] flex flex-col bg-surface-muted/50 border border-[var(--color-border)] rounded-2xl p-3 shadow-sm"
+      className="min-h-[500px] flex flex-col bg-surface-muted/50 border border-[var(--color-border)] rounded-2xl p-3 shadow-sm"
     >
       <div className="flex items-center justify-between mb-3 text-[13px] font-bold text-brand-muted uppercase tracking-wider px-1">
         <span className="flex items-center gap-1.5 text-brand-text">
@@ -57,6 +58,12 @@ export function Column({ status, jobs }: Props) {
               <p className="text-[11px] text-brand-muted leading-normal px-2">
                 {STATUS_EMPTY_COPY[status]}
               </p>
+              <Link
+                href={`/jobs/new?status=${status}`}
+                className="mt-1 inline-flex items-center gap-1 text-[10px] font-semibold text-accent hover:underline"
+              >
+                + Add job
+              </Link>
             </div>
           ) : (
             jobs.map((job) => <JobCard key={job.id} job={job} />)

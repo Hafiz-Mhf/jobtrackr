@@ -3,10 +3,13 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { Briefcase, ChevronRight, Plus, Search, Calendar, MapPin, Palette, Code, Terminal, Layers } from 'lucide-react'
+import { motion } from 'framer-motion'
 import { useJobs } from '@/hooks/useJobs'
 import { StatusBadge } from '@/components/jobs/StatusBadge'
 import { formatDate } from '@/lib/utils'
 import { cn } from '@/lib/utils'
+import { stagger, fadeUp } from '@/lib/animations'
+import { JobListSkeleton } from '@/components/ui/Skeleton'
 import type { JobStatus } from '@/types'
 
 const STATUS_BAR_COLOR: Record<JobStatus, string> = {
@@ -48,7 +51,7 @@ export default function JobsListPage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedStatus, setSelectedStatus] = useState<string>('all')
 
-  if (loading) return <div className="p-6 text-sm text-brand-muted">Loading jobs...</div>
+  if (loading) return <JobListSkeleton />
   if (error) return <div className="p-6 text-sm text-[var(--color-rejected)]">{error}</div>
 
   // Filter logic
@@ -183,66 +186,72 @@ export default function JobsListPage() {
           <p className="text-sm text-brand-muted">No applications match your search filters.</p>
         </div>
       ) : (
-        <div className="grid gap-4">
+        <motion.div
+          initial="hidden"
+          animate="visible"
+          variants={stagger(0.04)}
+          className="grid gap-4"
+        >
           {filteredJobs.map((job) => {
             const IconComponent = getJobIcon(job.role, job.tags)
             const meta = [job.location, job.salary_range].filter(Boolean).join(' &bull; ')
 
             return (
-              <Link
-                key={job.id}
-                href={`/jobs/${job.id}`}
-                className="relative overflow-hidden bg-surface border border-[var(--color-border)] rounded-2xl p-5 shadow-card card-hover transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-4 group"
-              >
-                <div className="flex items-start gap-4">
-                  <div className="w-12 h-12 bg-surface-muted rounded-xl border border-[var(--color-border)] flex items-center justify-center shadow-sm shrink-0">
-                    <IconComponent className={cn('size-6', STATUS_ICON_COLOR[job.status])} />
-                  </div>
-                  <div className="space-y-1">
-                    <h3 className="font-bold text-brand-text text-base leading-snug group-hover:text-accent transition-colors">
-                      {job.role}
-                    </h3>
-                    <div className="flex flex-wrap items-center gap-2">
-                      <span className="font-semibold text-brand-text text-sm">{job.company}</span>
-                      <StatusBadge status={job.status} />
+              <motion.div key={job.id} variants={fadeUp}>
+                <Link
+                  href={`/jobs/${job.id}`}
+                  className="relative overflow-hidden bg-surface border border-[var(--color-border)] rounded-2xl p-5 shadow-card card-hover focus-ring transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-4 group"
+                >
+                  <div className="flex items-start gap-4">
+                    <div className="w-12 h-12 bg-surface-muted rounded-xl border border-[var(--color-border)] flex items-center justify-center shadow-sm shrink-0">
+                      <IconComponent className={cn('size-6', STATUS_ICON_COLOR[job.status])} />
                     </div>
-                    {meta && (
-                      <p
-                        className="text-xs text-brand-muted font-medium flex items-center gap-1"
-                        dangerouslySetInnerHTML={{ __html: meta }}
-                      />
-                    )}
-                    {job.tags.length > 0 && (
-                      <div className="flex flex-wrap gap-1.5 pt-1.5">
-                        {job.tags.slice(0, 3).map((tag) => (
-                          <span
-                            key={tag}
-                            className="font-mono text-[9px] px-2 py-0.5 rounded bg-surface-muted text-brand-muted font-semibold"
-                          >
-                            {tag}
-                          </span>
-                        ))}
-                        {job.tags.length > 3 && (
-                          <span className="font-mono text-[9px] px-2 py-0.5 rounded bg-surface-muted text-brand-muted font-semibold">
-                            +{job.tags.length - 3} more
-                          </span>
-                        )}
+                    <div className="space-y-1">
+                      <h3 className="font-bold text-brand-text text-base leading-snug group-hover:text-accent transition-colors">
+                        {job.role}
+                      </h3>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="font-semibold text-brand-text text-sm">{job.company}</span>
+                        <StatusBadge status={job.status} />
                       </div>
-                    )}
+                      {meta && (
+                        <p
+                          className="text-xs text-brand-muted font-medium flex items-center gap-1"
+                          dangerouslySetInnerHTML={{ __html: meta }}
+                        />
+                      )}
+                      {job.tags.length > 0 && (
+                        <div className="flex flex-wrap gap-1.5 pt-1.5">
+                          {job.tags.slice(0, 3).map((tag) => (
+                            <span
+                              key={tag}
+                              className="font-mono text-[9px] px-2 py-0.5 rounded bg-surface-muted text-brand-muted font-semibold"
+                            >
+                              {tag}
+                            </span>
+                          ))}
+                          {job.tags.length > 3 && (
+                            <span className="font-mono text-[9px] px-2 py-0.5 rounded bg-surface-muted text-brand-muted font-semibold">
+                              +{job.tags.length - 3} more
+                            </span>
+                          )}
+                        </div>
+                      )}
+                    </div>
                   </div>
-                </div>
 
-                <div className="flex items-center justify-between sm:justify-end gap-4 border-t border-[var(--color-border)]/50 pt-3 sm:border-none sm:pt-0 shrink-0">
-                  <span className="text-xs text-brand-muted font-mono flex items-center gap-1.5">
-                    <Calendar className="size-3.5" />
-                    Updated {formatDate(job.last_updated)}
-                  </span>
-                  <ChevronRight className="size-5 text-brand-muted group-hover:text-accent group-hover:translate-x-1 transition-all" />
-                </div>
-              </Link>
+                  <div className="flex items-center justify-between sm:justify-end gap-4 border-t border-[var(--color-border)]/50 pt-3 sm:border-none sm:pt-0 shrink-0">
+                    <span className="text-xs text-brand-muted font-mono flex items-center gap-1.5">
+                      <Calendar className="size-3.5" />
+                      Updated {formatDate(job.last_updated)}
+                    </span>
+                    <ChevronRight className="size-5 text-brand-muted group-hover:text-accent group-hover:translate-x-1 transition-all" />
+                  </div>
+                </Link>
+              </motion.div>
             )
           })}
-        </div>
+        </motion.div>
       )}
     </div>
   )

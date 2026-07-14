@@ -1,12 +1,39 @@
 'use client'
 
+import { useEffect, useRef, useState } from 'react'
+import { motion } from 'framer-motion'
 import { useJobs } from '@/hooks/useJobs'
 import { getWeeklyStats } from '@/lib/stats'
+import { stagger, fadeUp } from '@/lib/animations'
 import { cn } from '@/lib/utils'
+import { StatsBarSkeleton } from '@/components/ui/Skeleton'
+
+function AnimatedNumber({ value }: { value: number }) {
+  const [display, setDisplay] = useState(0)
+  const ref = useRef<number | null>(null)
+
+  useEffect(() => {
+    if (value === 0) { setDisplay(0); return }
+    const duration = 600
+    const start = performance.now()
+    function tick(now: number) {
+      const progress = Math.min((now - start) / duration, 1)
+      // ease-out quart
+      const eased = 1 - Math.pow(1 - progress, 4)
+      setDisplay(Math.round(eased * value))
+      if (progress < 1) ref.current = requestAnimationFrame(tick)
+    }
+    ref.current = requestAnimationFrame(tick)
+    return () => { if (ref.current) cancelAnimationFrame(ref.current) }
+  }, [value])
+
+  const formatted = display < 10 ? `0${display}` : `${display}`
+  return <>{formatted}</>
+}
 
 export function StatsBar() {
   const { jobs, loading } = useJobs()
-  if (loading) return null
+  if (loading) return <StatsBarSkeleton />
 
   const stats = getWeeklyStats(jobs)
   const tiles = [
@@ -40,14 +67,17 @@ export function StatsBar() {
     },
   ]
 
-  // Formatted value helper (adds leading zero if < 10)
-  const formatVal = (v: number) => (v < 10 ? `0${v}` : `${v}`)
-
   return (
-    <div className="grid grid-cols-2 md:grid-cols-4 gap-3 px-6 pt-6">
+    <motion.div
+      initial="hidden"
+      animate="visible"
+      variants={stagger(0.08)}
+      className="grid grid-cols-2 md:grid-cols-4 gap-3 px-6 pt-6"
+    >
       {tiles.map((tile) => (
-        <div
+        <motion.div
           key={tile.label}
+          variants={fadeUp}
           className="relative overflow-hidden bg-surface border border-[var(--color-border)] rounded-xl px-4 py-3 shadow-sm flex flex-col justify-between hover:shadow-md transition-shadow"
         >
           <div className="flex items-center gap-1.5">
@@ -58,14 +88,15 @@ export function StatsBar() {
           </div>
           <div className="flex items-baseline justify-between mt-1.5">
             <span className="text-lg md:text-xl font-bold text-brand-text">
-              {formatVal(tile.value)}
+              <AnimatedNumber value={tile.value} />
             </span>
             <span className={cn('font-mono text-[10px] font-semibold', tile.textColor)}>
               {tile.subtext}
             </span>
           </div>
-        </div>
+        </motion.div>
       ))}
-    </div>
+    </motion.div>
   )
 }
+
