@@ -112,7 +112,6 @@ export function JobCard({ job }: Props) {
         isDragging && 'shadow-card-drag rotate-1 scale-[1.02] border-accent z-50'
       )}
     >
-      <div className={cn('absolute top-0 left-0 w-full h-1', STATUS_BAR_COLOR[job.status])} />
       <Link href={`/jobs/${job.id}`} onClick={(e) => isDragging && e.preventDefault()}>
         <div className="flex gap-2.5 mb-2.5">
           <div className="w-8 h-8 rounded bg-surface-muted flex items-center justify-center shrink-0 border border-[var(--color-border)]/50">

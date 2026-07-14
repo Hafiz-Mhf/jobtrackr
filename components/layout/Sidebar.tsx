@@ -44,9 +44,9 @@ export function Sidebar({ reminderCount }: Props) {
 
   const linkClass = (active: boolean) =>
     cn(
-      'flex items-center gap-3 py-2.5 text-sm font-medium text-brand-muted hover:bg-accent-light hover:text-accent border-l-4 border-transparent rounded-r-xl transition-all',
+      'flex items-center gap-3 py-2.5 text-sm font-medium text-brand-muted hover:bg-accent-light hover:text-accent rounded-xl transition-all',
       collapsed ? 'justify-center px-2' : 'px-4',
-      active && 'bg-accent-light/60 text-accent font-bold border-l-4 border-accent'
+      active && 'bg-accent-light/60 text-accent font-bold'
     )
 
   return (
@@ -162,7 +162,7 @@ export function Sidebar({ reminderCount }: Props) {
             onClick={handleLogout}
             title={collapsed ? 'Logout' : undefined}
             className={cn(
-              'w-full flex items-center gap-3 py-2.5 text-sm font-medium text-[var(--color-rejected)] hover:bg-[var(--color-rejected)]/5 hover:text-[var(--color-rejected)] border-l-4 border-transparent rounded-r-xl transition-all cursor-pointer',
+              'w-full flex items-center gap-3 py-2.5 text-sm font-medium text-[var(--color-rejected)] hover:bg-[var(--color-rejected)]/5 hover:text-[var(--color-rejected)] rounded-xl transition-all cursor-pointer',
               collapsed ? 'justify-center px-2' : 'px-4'
             )}
           >

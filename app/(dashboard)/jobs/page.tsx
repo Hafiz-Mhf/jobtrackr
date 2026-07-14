@@ -65,7 +65,7 @@ export default function JobsListPage() {
   if (jobs.length === 0) {
     return (
       <div className="p-6 max-w-max-content-width mx-auto flex flex-col gap-6">
-        <div className="flex items-center gap-2 text-brand-muted text-xs font-mono uppercase tracking-wider pb-4 border-b border-[var(--color-border)]">
+        <div className="flex items-center gap-2 text-brand-muted text-xs font-medium pb-4 border-b border-[var(--color-border)]">
           <span>Search</span>
           <span>&bull;</span>
           <span className="text-accent font-semibold">All Applications</span>
@@ -109,7 +109,7 @@ export default function JobsListPage() {
   return (
     <div className="p-6 max-w-max-content-width mx-auto flex flex-col gap-6">
       {/* Header and Breadcrumbs */}
-      <div className="flex items-center gap-2 text-brand-muted text-xs font-mono uppercase tracking-wider pb-4 border-b border-[var(--color-border)]">
+      <div className="flex items-center gap-2 text-brand-muted text-xs font-medium pb-4 border-b border-[var(--color-border)]">
         <span>Search</span>
         <span>&bull;</span>
         <span className="text-accent font-semibold">All Applications</span>
@@ -194,7 +194,6 @@ export default function JobsListPage() {
                 href={`/jobs/${job.id}`}
                 className="relative overflow-hidden bg-surface border border-[var(--color-border)] rounded-2xl p-5 shadow-card card-hover transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-4 group"
               >
-                <div className={cn('absolute top-0 left-0 w-full h-1', STATUS_BAR_COLOR[job.status])} />
                 <div className="flex items-start gap-4">
                   <div className="w-12 h-12 bg-surface-muted rounded-xl border border-[var(--color-border)] flex items-center justify-center shadow-sm shrink-0">
                     <IconComponent className={cn('size-6', STATUS_ICON_COLOR[job.status])} />

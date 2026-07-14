@@ -2,6 +2,7 @@
 
 import { useDroppable } from '@dnd-kit/core'
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
+import { Bookmark, Send, Calendar, Award, XCircle } from 'lucide-react'
 import type { Job, JobStatus } from '@/types'
 import { STATUS_LABELS, STATUS_EMPTY_COPY, STATUS_ACCENT } from '@/lib/constants'
 import { JobCard } from './JobCard'
@@ -11,9 +12,26 @@ interface Props {
   jobs: Job[]
 }
 
+const STATUS_ICONS: Record<JobStatus, React.ComponentType<{ className?: string }>> = {
+  saved: Bookmark,
+  applied: Send,
+  interview: Calendar,
+  offer: Award,
+  rejected: XCircle,
+}
+
+const STATUS_ICON_COLOR: Record<JobStatus, string> = {
+  saved: 'text-[var(--color-saved)]',
+  applied: 'text-[var(--color-applied)]',
+  interview: 'text-[var(--color-interview)]',
+  offer: 'text-[var(--color-offer)]',
+  rejected: 'text-[var(--color-rejected)]',
+}
+
 export function Column({ status, jobs }: Props) {
   const { setNodeRef } = useDroppable({ id: status })
   const accent = STATUS_ACCENT[status]
+  const IconComponent = STATUS_ICONS[status]
 
   return (
     <div
@@ -32,8 +50,13 @@ export function Column({ status, jobs }: Props) {
       <SortableContext items={jobs.map((j) => j.id)} strategy={verticalListSortingStrategy}>
         <div className="flex-1 flex flex-col gap-2.5 min-h-[300px]">
           {jobs.length === 0 ? (
-            <div className="flex-1 flex items-center justify-center border border-dashed border-[var(--color-border)] rounded-2xl p-4 text-center text-[11px] text-brand-muted leading-relaxed">
-              {STATUS_EMPTY_COPY[status]}
+            <div className="flex-1 flex flex-col items-center justify-center border border-dashed border-[var(--color-border)] rounded-2xl p-4 text-center gap-2 min-h-[150px]">
+              <div className="size-8 rounded-lg bg-surface flex items-center justify-center border border-[var(--color-border)]/50 shadow-sm shrink-0">
+                <IconComponent className={`size-4 ${STATUS_ICON_COLOR[status]}`} />
+              </div>
+              <p className="text-[11px] text-brand-muted leading-normal px-2">
+                {STATUS_EMPTY_COPY[status]}
+              </p>
             </div>
           ) : (
             jobs.map((job) => <JobCard key={job.id} job={job} />)

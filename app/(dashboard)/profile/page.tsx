@@ -32,7 +32,7 @@ export default async function ProfilePage() {
   return (
     <div className="p-6 max-w-max-content-width mx-auto flex flex-col gap-6">
       {/* Page Header */}
-      <div className="flex items-center gap-2 text-brand-muted text-xs font-mono uppercase tracking-wider pb-4 border-b border-[var(--color-border)]">
+      <div className="flex items-center gap-2 text-brand-muted text-xs font-medium pb-4 border-b border-[var(--color-border)]">
         <span>Account</span>
         <span>&bull;</span>
         <span className="text-accent font-semibold">Profile Settings</span>

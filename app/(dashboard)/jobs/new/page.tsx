@@ -89,7 +89,7 @@ export default function NewJobPage() {
 
           {/* Dynamic Recent List */}
           <div className="bg-surface border border-[var(--color-border)] rounded-2xl p-6 shadow-card space-y-4">
-            <h4 className="text-xs font-bold uppercase tracking-widest text-brand-muted">Recently Added</h4>
+            <h4 className="text-sm font-bold text-brand-muted">Recently Added</h4>
             {recentJobs.length === 0 ? (
               <p className="text-xs text-brand-muted italic py-2">No applications added yet.</p>
             ) : (

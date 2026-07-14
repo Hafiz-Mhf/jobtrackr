@@ -223,7 +223,7 @@ export default function LoginPage() {
           {/* Form */}
           <form onSubmit={handleEmailAuth} className="space-y-4">
             <div className="space-y-1.5">
-              <label htmlFor="email" className="text-xs font-bold uppercase tracking-wider text-brand-text">
+              <label htmlFor="email" className="text-sm font-semibold text-brand-text">
                 Email Address
               </label>
               <div className="relative">
@@ -243,7 +243,7 @@ export default function LoginPage() {
 
             <div className="space-y-1.5">
               <div className="flex justify-between items-center">
-                <label htmlFor="password" className="text-xs font-bold uppercase tracking-wider text-brand-text">
+                <label htmlFor="password" className="text-sm font-semibold text-brand-text">
                   Password
                 </label>
                 {mode === 'sign-in' && (

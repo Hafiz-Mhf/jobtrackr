@@ -77,7 +77,6 @@ export default function RemindersPage() {
                 key={job.id}
                 className="relative overflow-hidden bg-surface border border-[var(--color-border)] rounded-2xl p-6 shadow-card transition-all duration-300 hover:shadow-lg flex flex-col md:flex-row md:items-center justify-between gap-6"
               >
-                <div className="absolute top-0 left-0 w-full h-1 bg-[var(--color-applied)]" />
                 <div className="flex items-start gap-4">
                   <div className="w-14 h-14 bg-surface-muted rounded-xl flex items-center justify-center border border-[var(--color-border)] shrink-0 shadow-sm">
                     <IconComponent className="size-7 text-accent" />

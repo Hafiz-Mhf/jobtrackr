@@ -50,11 +50,13 @@ export function StatsBar() {
           key={tile.label}
           className="relative overflow-hidden bg-surface border border-[var(--color-border)] rounded-xl px-4 py-3 shadow-sm flex flex-col justify-between hover:shadow-md transition-shadow"
         >
-          <div className={cn('absolute top-0 left-0 w-full h-1', tile.color)} />
-          <p className="text-[10px] md:text-xs font-bold uppercase tracking-wider text-brand-muted">
-            {tile.label}
-          </p>
-          <div className="flex items-baseline justify-between mt-1">
+          <div className="flex items-center gap-1.5">
+            <span className={cn('size-1.5 rounded-full', tile.color)} aria-hidden="true" />
+            <p className="text-[11px] md:text-xs font-semibold text-brand-muted">
+              {tile.label}
+            </p>
+          </div>
+          <div className="flex items-baseline justify-between mt-1.5">
             <span className="text-lg md:text-xl font-bold text-brand-text">
               {formatVal(tile.value)}
             </span>

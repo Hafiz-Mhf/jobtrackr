@@ -115,7 +115,7 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
             <ArrowLeft className="size-4" />
           </Link>
           <div className="h-4 w-[1px] bg-[var(--color-border)]"></div>
-          <span className="text-xs text-brand-muted font-mono uppercase tracking-wider">
+          <span className="text-xs text-brand-muted font-medium">
             Applications / {job.company}
           </span>
         </div>
@@ -155,7 +155,7 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
             Delete
           </button>
           <div className="flex items-center gap-2">
-            <label htmlFor="quick-status" className="text-xs text-brand-muted uppercase font-semibold tracking-wider">
+            <label htmlFor="quick-status" className="text-xs text-brand-muted font-semibold">
               Stage:
             </label>
             <select
@@ -256,7 +256,7 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
         <div className="lg:col-span-5 flex flex-col gap-6">
           {/* Recruiter / Metadata Card */}
           <section className="bg-surface border border-[var(--color-border)] rounded-2xl shadow-card p-6 space-y-4">
-            <h4 className="text-xs font-bold uppercase tracking-widest text-brand-muted">Point of Contact</h4>
+            <h4 className="text-sm font-bold text-brand-muted">Point of Contact</h4>
             <div className="flex items-center gap-4">
               <div className="w-12 h-12 rounded-full overflow-hidden bg-accent-light flex items-center justify-center text-accent font-bold text-lg border border-[var(--color-border)]">
                 {job.company.slice(0, 1).toUpperCase()}
