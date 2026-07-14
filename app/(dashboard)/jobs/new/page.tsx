@@ -1,17 +1,19 @@
 'use client'
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState, Suspense } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { Briefcase } from 'lucide-react'
 import { ParseInput } from '@/components/jobs/ParseInput'
 import { JobForm, type JobFormValues } from '@/components/jobs/JobForm'
 import { useJobs } from '@/hooks/useJobs'
-import type { ParsedJob } from '@/types'
+import type { ParsedJob, JobStatus } from '@/types'
 
-export default function NewJobPage() {
+function NewJobFormContent() {
+  const searchParams = useSearchParams()
+  const defaultStatus = searchParams.get('status') as JobStatus | null
   const [parsed, setParsed] = useState<ParsedJob | null>(null)
-  const [showForm, setShowForm] = useState(false)
+  const [showForm, setShowForm] = useState(defaultStatus !== null)
   const { jobs, createJob } = useJobs()
   const router = useRouter()
 
@@ -57,7 +59,7 @@ export default function NewJobPage() {
                 </button>
               </div>
               <JobForm
-                initial={parsed ?? undefined}
+                initial={parsed ?? (defaultStatus ? { status: defaultStatus } : undefined)}
                 onSubmit={handleSubmit}
                 submitLabel="Save application"
                 reveal={parsed !== null}
@@ -115,5 +117,13 @@ export default function NewJobPage() {
         </div>
       </div>
     </div>
+  )
+}
+
+export default function NewJobPage() {
+  return (
+    <Suspense fallback={<div className="p-6 text-sm text-brand-muted">Loading page...</div>}>
+      <NewJobFormContent />
+    </Suspense>
   )
 }

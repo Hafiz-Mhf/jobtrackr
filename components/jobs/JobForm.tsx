@@ -23,28 +23,28 @@ export interface JobFormValues {
 }
 
 interface Props {
-  initial?: Partial<ParsedJob> | Job
+  initial?: Partial<ParsedJob> | Partial<Job>
   onSubmit: (values: JobFormValues) => Promise<void>
   submitLabel?: string
   /** When true, fields fade + slide in with a staggered reveal (used after JD extraction). */
   reveal?: boolean
 }
 
-function toDefaults(initial?: Partial<ParsedJob> | Job): JobFormValues {
+function toDefaults(initial?: Partial<ParsedJob> | Partial<Job>): JobFormValues {
   return {
     company: initial?.company ?? '',
     role: initial?.role ?? '',
-    url: 'url' in (initial ?? {}) ? (initial as Job).url ?? '' : '',
+    url: 'url' in (initial ?? {}) ? (initial as Partial<Job>).url ?? '' : '',
     description: initial?.description ?? '',
-    status: 'status' in (initial ?? {}) ? (initial as Job).status : 'saved',
+    status: 'status' in (initial ?? {}) ? (initial as Partial<Job>).status ?? 'saved' : 'saved',
     salary_range: initial?.salary_range ?? '',
     location: initial?.location ?? '',
     tags: (initial?.tags ?? []).join(', '),
-    notes: 'notes' in (initial ?? {}) ? (initial as Job).notes ?? '' : '',
+    notes: 'notes' in (initial ?? {}) ? (initial as Partial<Job>).notes ?? '' : '',
     // <input type="date"> needs YYYY-MM-DD; applied_at is stored as an ISO timestamp.
-    applied_at: 'applied_at' in (initial ?? {}) ? ((initial as Job).applied_at ?? '').slice(0, 10) : '',
-    source: 'source' in (initial ?? {}) ? (initial as Job).source ?? '' : '',
-    rejection_reason: 'rejection_reason' in (initial ?? {}) ? (initial as Job).rejection_reason ?? '' : '',
+    applied_at: 'applied_at' in (initial ?? {}) ? ((initial as Partial<Job>).applied_at ?? '').slice(0, 10) : '',
+    source: 'source' in (initial ?? {}) ? (initial as Partial<Job>).source ?? '' : '',
+    rejection_reason: 'rejection_reason' in (initial ?? {}) ? (initial as Partial<Job>).rejection_reason ?? '' : '',
   }
 }
 

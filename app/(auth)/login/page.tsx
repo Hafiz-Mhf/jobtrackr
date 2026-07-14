@@ -7,18 +7,18 @@ import { createClient } from '@/lib/supabase/client'
 const BENEFITS = [
   {
     icon: FileText,
-    title: 'Paste a job post, done',
-    description: 'We pull out the company, role, and tech stack automatically.',
+    title: 'Instant AI Parsing',
+    description: 'Paste any job description to automatically extract roles, requirements, and tech stacks.',
   },
   {
     icon: LayoutGrid,
-    title: 'One board, every stage',
-    description: 'Drag applications from Saved to Offer without losing track.',
+    title: 'Visual Pipeline Tracker',
+    description: 'Manage your applications on an interactive Kanban board from initial bookmark to final offer.',
   },
   {
     icon: BellRing,
-    title: 'Never ghost a follow-up',
-    description: 'We flag anything quiet for 7+ days.',
+    title: 'Proactive Follow-up Alerts',
+    description: 'Never lose momentum. We automatically flag applications that have gone quiet for 7+ days.',
   },
 ]
 
@@ -137,11 +137,11 @@ export default function LoginPage() {
         <div className="relative z-10 flex-1 flex flex-col justify-center space-y-10 max-w-md mx-auto">
           <div className="space-y-4">
             <h1 className="text-3xl xl:text-4xl font-extrabold leading-tight text-brand-text tracking-tight">
-              Your job search, <br />
-              <span className="text-accent">actually organized.</span>
+              Take control of your <br />
+              <span className="text-accent">job search pipeline.</span>
             </h1>
             <p className="text-brand-muted text-sm xl:text-base leading-relaxed">
-              A calm, intelligent workspace designed to turn career chaos into a streamlined path to your next offer.
+              A calm, unified workspace designed to organize your applications, track follow-ups, and accelerate your path to the next offer.
             </p>
           </div>
 
