@@ -126,4 +126,14 @@ describe('parseJobDescription', () => {
       expect.arrayContaining(['Technical Support', 'Troubleshooting', 'Active Directory', 'ITIL', 'Ticketing']),
     )
   })
+
+  it('extracts company name using corporate legal suffixes', () => {
+    const result = parseJobDescription('Job description for Tech Solutions Sdn Bhd\nWe are looking for...')
+    expect(result.company).toBe('Tech Solutions Sdn Bhd')
+  })
+
+  it('filters out common noise lines when parsing company name', () => {
+    const result = parseJobDescription('Apply Now\nPosted 3 days ago\nStripe\nSenior Engineer')
+    expect(result.company).toBe('Stripe')
+  })
 })

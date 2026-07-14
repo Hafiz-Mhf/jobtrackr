@@ -16,6 +16,9 @@ export function parseJobDescription(text: string, customTags: string[] = []): Pa
 const ROLE_KEYWORDS =
   /\b(engineer|developer|architect|manager|analyst|consultant|designer|specialist|administrator|coordinator|scientist|technician|programmer|lead|director|intern|associate|recruiter|accountant|auditor|support|helpdesk|help\s?desk)\b/i
 
+const LEGAL_SUFFIX_REGEX = /\b(Sdn\s*Bhd|Bhd|LLC|Ltd|Inc|Corp|Corporation|Pte\s*Ltd)\b/i
+const NOISE_LINES = /^(apply|share|save|posted|about|requirements|description|responsibilities|job|overview|company|employer|organization|search|sign\s*in|login|register)\b/i
+
 // Common Malaysian locations — matched before the generic "City, ST" regex so a real
 // place is recognised and a capitalised job-title fragment isn't mistaken for a location.
 // Longer, more specific names first so "Subang Jaya" wins over "Subang", etc.
@@ -104,17 +107,36 @@ function extractLocation(text: string): string | undefined {
 }
 
 function extractCompany(text: string): string {
+  const lines = nonEmptyLines(text)
+
   // 1. Explicit label: "Company:", "Employer:", "Organization:"
   const label = text.match(/^\s*(?:company|employer|organi[sz]ation)\s*[:\-]\s*(.+)$/im)
   if (label?.[1]) return cleanValue(label[1])
 
-  // 2. "at <Company>" / "@ <Company>" — capture up to 4 capitalised words
+  // 2. Look for lines with legal corporate suffixes first
+  const prefixCleaner = /^(?:job\s*description\s*(?:for|of)?|hiring\s*(?:at|for)?|careers\s*(?:at)?|about|at|with)\s+/i
+  for (const line of lines.slice(0, 10)) {
+    const suffixMatch = line.match(LEGAL_SUFFIX_REGEX)
+    if (suffixMatch && suffixMatch.index !== undefined) {
+      const suffixEnd = suffixMatch.index + suffixMatch[0].length
+      const companyPart = line.substring(0, suffixEnd).trim()
+      const cleaned = companyPart.replace(prefixCleaner, '').trim()
+      if (cleaned.length > 2 && cleaned.length <= 60) {
+        return cleaned
+      }
+    }
+    if (NOISE_LINES.test(line)) continue
+  }
+
+  // 3. "at <Company>" / "@ <Company>" — capture up to 4 capitalised words
   const atMatch = text.match(/\b(?:at|@)\s+([A-Z][A-Za-z0-9&.'-]+(?:\s+[A-Z][A-Za-z0-9&.'-]+){0,3})/)
   if (atMatch?.[1]) return cleanValue(atMatch[1])
 
-  // 3. First-line heuristic: a short, punctuation-free, non-title line is likely the company name
-  const first = nonEmptyLines(text)[0]
-  if (first && isLikelyCompany(first)) return first
+  // 4. First-line heuristic (excluding noise lines)
+  for (const line of lines.slice(0, 5)) {
+    if (NOISE_LINES.test(line)) continue
+    if (isLikelyCompany(line)) return line
+  }
 
   return 'Unknown Company'
 }
@@ -125,7 +147,7 @@ function isLikelyCompany(line: string): boolean {
   const words = line.split(/\s+/)
   if (words.length < 1 || words.length > 4) return false
   if (ROLE_KEYWORDS.test(line)) return false
-  if (/^(about|overview|job|responsibilities|requirements|summary|description|apply)\b/i.test(line)) return false
+  if (NOISE_LINES.test(line)) return false
   return true
 }
 
