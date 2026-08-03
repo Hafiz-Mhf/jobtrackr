@@ -34,6 +34,8 @@ The server does only the two things a browser cannot: cross-origin fetch, and re
 | `lib/extract/fetch-page.ts` | `fetchJobPage(url): Promise<string>` — guarded fetch with manual redirects. |
 | `lib/extract/html-to-text.ts` | `htmlToText(html): string` — pure. |
 | `lib/extract/jsonld.ts` | `extractJobPosting(html): ParsedJob \| null` — pure. |
+| `lib/extract/errors.ts` | `ExtractError`, error codes, and the user-facing message map. |
+| `lib/extract/rate-limit.ts` | `checkRateLimit(userId, now?)` — in-memory per-user window. |
 | `app/api/jobs/fetch-url/route.ts` | `POST` handler; auth, rate limit, orchestration. |
 
 ### Changed files
@@ -84,7 +86,9 @@ Exactly one of `jobPosting` / `text` is non-null.
 | `jobLocation.address.addressLocality` (+ `, addressRegion`) | `location` |
 | `baseSalary.value` (`minValue`/`maxValue`/`value`, `currency`, `unitText`) | `salary_range` |
 | `description` (HTML) → `htmlToText` | `description` |
-| derived: `extractTags(description)` | `tags` |
+| derived: `matchDictionary(description)` | `tags` |
+
+The server has no access to per-user learned tags, which live in `TagsProvider` on the client. It therefore contributes dictionary matches only, and the client merges `matchCustomTags(description, customTags)` into the tag list on receipt. Custom-tag learning keeps working on the JSON-LD path.
 
 Absent optional fields (`location`, `salary_range`) stay `undefined`. Nothing is invented. `jobLocation` may be an array — take the first entry. The document root may be a bare object, an array, or `{ "@graph": [...] }`; all three are walked for the first node whose `@type` is or includes `JobPosting`.
 
@@ -146,6 +150,7 @@ One message per failure class, all human-readable and pointing at the workaround
 | 401 / 403 / 429 from target | "That site blocks automatic reading. Paste the description text instead." |
 | Non-HTML content type | "That link isn't a web page we can read." |
 | Network failure | "Couldn't reach that link. Check it and try again." |
+| Response exceeds the 2 MB cap | "That page is too large to read. Paste the description text instead." |
 | Rate limited | "Too many links fetched. Wait a minute and try again." |
 
 LinkedIn, Indeed, and JobStreet will usually land in row 3. That is the expected common case, not an edge case, so the copy must stay calm and name the alternative.
@@ -158,6 +163,7 @@ Pure functions get unit tests under `__tests__/lib/`, using the existing vitest 
 
 - `extract/jsonld.test.ts` — Greenhouse, Lever, and Ashby fixture shapes; bare `JobPosting`; `@graph` wrapper; top-level array; missing `hiringOrganization`; salary as min/max versus single value; no JSON-LD returns `null`; malformed block is skipped rather than thrown; `__proto__` in the payload does not pollute.
 - `extract/html-to-text.test.ts` — `script` and `style` content dropped; `<br>`, `<p>`, `<li>` become newlines; entities decoded; whitespace collapsed.
+- `extract/rate-limit.test.ts` — allows up to the limit; rejects past it; allows again after the window; tracks users separately. `now` is injected, so no fake timers.
 - `extract/url-guard.test.ts` — one case per validation rule: https accepted; http rejected; `localhost` rejected; `127.0.0.1`, `10.0.0.1`, `192.168.1.1`, `169.254.169.254` rejected; `user:pass@host` rejected; IPv6 literal rejected; over-length rejected.
 
 The route handler and the `ParseInput` wiring are verified manually against one real Greenhouse, Lever, and Ashby posting, plus a LinkedIn URL to confirm the blocked-site copy reads well. No HTTP mocking layer is added for MVP.
