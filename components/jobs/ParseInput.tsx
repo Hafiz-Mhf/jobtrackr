@@ -3,32 +3,33 @@
 import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { toast } from 'sonner'
-import { Sparkles, ChevronRight, FileText } from 'lucide-react'
-import { useParser } from '@/hooks/useParser'
+import { Sparkles, ChevronRight, FileText, Loader2 } from 'lucide-react'
+import { useParser, type ParsedJobWithUrl } from '@/hooks/useParser'
 import { useTags } from '@/contexts/TagsProvider'
+import { isSingleUrl } from '@/lib/url'
+import { EXTRACT_ERROR_MESSAGES } from '@/lib/extract/errors'
 import { stagger, fadeUp } from '@/lib/animations'
 import type { ParsedJob } from '@/types'
 
 interface Props {
-  onParsed: (parsed: ParsedJob) => void
+  onParsed: (parsed: ParsedJobWithUrl) => void
   onManual: () => void
 }
 
 export function ParseInput({ onParsed, onManual }: Props) {
   const [text, setText] = useState('')
-  const { result, parse } = useParser()
+  const { result, loading, parse, parseFromUrl } = useParser()
   const { customTags } = useTags()
 
-  function handleExtract() {
-    const parsed = parse(text, customTags)
-    if (!parsed) return
+  function reportFieldsFound(parsed: ParsedJob) {
     const fieldsFound = [
       parsed.company !== 'Unknown Company',
-      Boolean(parsed.role),
+      Boolean(parsed.role) && parsed.role !== 'Unknown Role',
       Boolean(parsed.salary_range),
       Boolean(parsed.location),
       parsed.tags.length > 0,
     ].filter(Boolean).length
+
     if (fieldsFound >= 4) {
       toast.success('Details extracted — review and confirm')
     } else if (fieldsFound > 0) {
@@ -36,7 +37,38 @@ export function ParseInput({ onParsed, onManual }: Props) {
     } else {
       toast.error("Couldn't extract details. Fill in the fields manually.", { duration: Infinity })
     }
-    onParsed(parsed)
+  }
+
+  // Opens the form with only the link filled in, so a failed fetch never loses it.
+  function fallbackToForm(url: string) {
+    onParsed({ company: '', role: '', tags: [], description: '', url })
+  }
+
+  async function handleExtract() {
+    const url = isSingleUrl(text)
+
+    if (!url) {
+      const parsed = parse(text, customTags)
+      if (!parsed) return
+      reportFieldsFound(parsed)
+      onParsed(parsed)
+      return
+    }
+
+    try {
+      const parsed = await parseFromUrl(url, customTags)
+      if (!parsed) {
+        toast.error("Couldn't read anything from that link. Paste the description text instead.", { duration: Infinity })
+        fallbackToForm(url)
+        return
+      }
+      reportFieldsFound(parsed)
+      onParsed({ ...parsed, url })
+    } catch (error) {
+      const message = error instanceof Error && error.message ? error.message : EXTRACT_ERROR_MESSAGES.network
+      toast.error(message, { duration: Infinity })
+      fallbackToForm(url)
+    }
   }
 
   const fields = result
@@ -56,7 +88,7 @@ export function ParseInput({ onParsed, onManual }: Props) {
           Job Description
         </label>
         <span className="text-[10px] text-brand-muted px-2 py-1 bg-surface-muted rounded-md uppercase tracking-wider font-semibold">
-          Supports LinkedIn, Indeed, Glassdoor
+          Paste text or a link
         </span>
       </div>
 
@@ -83,11 +115,11 @@ export function ParseInput({ onParsed, onManual }: Props) {
         <button
           type="button"
           onClick={handleExtract}
-          disabled={!text.trim()}
+          disabled={!text.trim() || loading}
           className="w-full sm:w-auto px-6 py-3.5 bg-accent text-white font-semibold text-sm rounded-xl hover:bg-accent-hover disabled:opacity-50 transition-all active:scale-[0.98] shadow-md flex items-center justify-center gap-2"
         >
-          <Sparkles className="size-4" />
-          Extract Job Details
+          {loading ? <Loader2 className="size-4 animate-spin" /> : <Sparkles className="size-4" />}
+          {loading ? 'Reading link…' : 'Extract Job Details'}
         </button>
       </div>
 

@@ -7,12 +7,13 @@ import { Briefcase } from 'lucide-react'
 import { ParseInput } from '@/components/jobs/ParseInput'
 import { JobForm, type JobFormValues } from '@/components/jobs/JobForm'
 import { useJobs } from '@/hooks/useJobs'
-import type { ParsedJob, JobStatus } from '@/types'
+import type { ParsedJobWithUrl } from '@/hooks/useParser'
+import type { JobStatus } from '@/types'
 
 function NewJobFormContent() {
   const searchParams = useSearchParams()
   const defaultStatus = searchParams.get('status') as JobStatus | null
-  const [parsed, setParsed] = useState<ParsedJob | null>(null)
+  const [parsed, setParsed] = useState<ParsedJobWithUrl | null>(null)
   const [showForm, setShowForm] = useState(defaultStatus !== null)
   const { jobs, createJob } = useJobs()
   const router = useRouter()
