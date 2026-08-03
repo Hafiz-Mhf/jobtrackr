@@ -4,6 +4,7 @@ export type ExtractErrorCode =
   | 'blocked'
   | 'not_html'
   | 'too_large'
+  | 'no_content'
   | 'network'
   | 'rate_limited'
 
@@ -15,6 +16,7 @@ export const EXTRACT_ERROR_MESSAGES: Record<ExtractErrorCode, string> = {
   blocked: 'That site blocks automatic reading. Paste the description text instead.',
   not_html: "That link isn't a web page we can read.",
   too_large: 'That page is too large to read. Paste the description text instead.',
+  no_content: "That page didn't include readable job details — it may load them with JavaScript. Paste the description text instead.",
   network: "Couldn't reach that link. Check it and try again.",
   rate_limited: 'Too many links fetched. Wait a minute and try again.',
 }

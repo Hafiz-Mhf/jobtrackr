@@ -14,11 +14,17 @@ const STATUS_BY_CODE: Record<ExtractErrorCode, number> = {
   invalid_url: 400,
   rate_limited: 429,
   not_html: 415,
+  no_content: 422,
   timeout: 504,
   blocked: 502,
   too_large: 502,
   network: 502,
 }
+
+// Client-rendered boards (Ashby, for one) serve a shell whose HTML holds almost
+// no text. Passing that through would prefill the form with junk, so anything
+// shorter than a plausible job description is reported as unreadable instead.
+const MIN_USEFUL_TEXT = 200
 
 function fail(code: ExtractErrorCode) {
   return NextResponse.json({ error: EXTRACT_ERROR_MESSAGES[code] }, { status: STATUS_BY_CODE[code] })
@@ -55,8 +61,11 @@ export async function POST(req: NextRequest) {
       })
     }
 
+    const text = htmlToText(html)
+    if (text.length < MIN_USEFUL_TEXT) return fail('no_content')
+
     return NextResponse.json({
-      data: { jobPosting: null, text: htmlToText(html).slice(0, MAX_TEXT_LENGTH) },
+      data: { jobPosting: null, text: text.slice(0, MAX_TEXT_LENGTH) },
     })
   } catch (error) {
     // Log the code only — never the fetched body, never the URL.

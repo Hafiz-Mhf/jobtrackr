@@ -151,6 +151,7 @@ One message per failure class, all human-readable and pointing at the workaround
 | Non-HTML content type | "That link isn't a web page we can read." |
 | Network failure | "Couldn't reach that link. Check it and try again." |
 | Response exceeds the 2 MB cap | "That page is too large to read. Paste the description text instead." |
+| Fetched page holds almost no text | "That page didn't include readable job details — it may load them with JavaScript. Paste the description text instead." |
 | Rate limited | "Too many links fetched. Wait a minute and try again." |
 
 LinkedIn, Indeed, and JobStreet will usually land in row 3. That is the expected common case, not an edge case, so the copy must stay calm and name the alternative.
@@ -167,6 +168,19 @@ Pure functions get unit tests under `__tests__/lib/`, using the existing vitest 
 - `extract/url-guard.test.ts` — one case per validation rule: https accepted; http rejected; `localhost` rejected; `127.0.0.1`, `10.0.0.1`, `192.168.1.1`, `169.254.169.254` rejected; `user:pass@host` rejected; IPv6 literal rejected; over-length rejected.
 
 The route handler and the `ParseInput` wiring are verified manually against one real Greenhouse, Lever, and Ashby posting, plus a LinkedIn URL to confirm the blocked-site copy reads well. No HTTP mocking layer is added for MVP.
+
+## Verified behaviour against live boards
+
+Measured 2026-08-03 against real postings. The original premise — that Greenhouse, Lever, Workable, and Ashby all embed JSON-LD — turned out to be only partly true. Recorded here so nobody re-derives it:
+
+| Board | Outcome | Notes |
+|---|---|---|
+| Lever (`jobs.lever.co`) | JSON-LD hit | Company, role, location, and full description all mapped cleanly. |
+| Greenhouse (`job-boards.greenhouse.io`) | Text fallback | Serves **no** `ld+json` on the job page. The stripped text is rich (~17.5k chars), so the heuristic parser still has plenty to work with. |
+| Ashby (`jobs.ashbyhq.com`) | `no_content` | Fully client-rendered. The served HTML is a ~7 kB shell reducing to 4 characters of text. |
+| Indeed (`indeed.com`) | `blocked` | Returns 403 to a non-browser user agent, as expected. |
+
+This is why the text fallback carries the design rather than being a safety net: for Greenhouse — a major board — it is the only path. It also motivated the `no_content` case: without a minimum-content floor, an Ashby link would have prefilled the form with the word "Jobs" as the job description.
 
 ## Rejected alternatives
 
