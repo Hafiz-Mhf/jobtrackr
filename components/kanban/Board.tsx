@@ -1,7 +1,21 @@
 'use client'
 
 import { useState } from 'react'
-import { DndContext, DragEndEvent, PointerSensor, KeyboardSensor, useSensor, useSensors } from '@dnd-kit/core'
+import {
+  DndContext,
+  DragEndEvent,
+  DragOverlay,
+  DragStartEvent,
+  DropAnimation,
+  MeasuringStrategy,
+  PointerSensor,
+  TouchSensor,
+  KeyboardSensor,
+  closestCorners,
+  defaultDropAnimationSideEffects,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core'
 import { sortableKeyboardCoordinates } from '@dnd-kit/sortable'
 import { motion } from 'framer-motion'
 import { Briefcase, Plus } from 'lucide-react'
@@ -11,6 +25,7 @@ import { JOB_STATUSES } from '@/lib/constants'
 import { stagger, fadeUp } from '@/lib/animations'
 import type { Job, JobStatus } from '@/types'
 import { Column } from './Column'
+import { JobCard } from './JobCard'
 import { RejectionModal } from './RejectionModal'
 import { BoardSkeleton } from '@/components/ui/Skeleton'
 
@@ -22,10 +37,24 @@ function resolveTargetStatus(overId: string, jobs: Job[]): JobStatus | null {
   return overJob ? overJob.status : null
 }
 
+// Column heights change as cards move between them, so droppable rects have to
+// be re-measured continuously or drop targets go stale mid-drag.
+const MEASURING = { droppable: { strategy: MeasuringStrategy.Always } }
+
+const DROP_ANIMATION: DropAnimation = {
+  duration: 220,
+  easing: 'cubic-bezier(0.2, 0, 0, 1)',
+  sideEffects: defaultDropAnimationSideEffects({
+    styles: { active: { opacity: '0.4' } },
+  }),
+}
+
 export function Board() {
   const { jobs, loading, error, updateJobStatus } = useJobs()
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    // Long-press to drag on touch, so vertical scrolling of the board still works.
+    useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 5 } }),
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,
     })
@@ -33,6 +62,8 @@ export function Board() {
   // When a card is dragged into Rejected we hold its id and prompt for a reason
   // before committing the move.
   const [pendingRejectId, setPendingRejectId] = useState<string | null>(null)
+  const [activeId, setActiveId] = useState<string | null>(null)
+  const activeJob = activeId ? jobs.find((j) => j.id === activeId) : undefined
 
   function commitStatus(jobId: string, status: JobStatus, reason?: string) {
     updateJobStatus(jobId, status, reason).catch(() => {
@@ -40,8 +71,13 @@ export function Board() {
     })
   }
 
+  function handleDragStart(event: DragStartEvent) {
+    setActiveId(event.active.id as string)
+  }
+
   function handleDragEnd(event: DragEndEvent) {
     const { active, over } = event
+    setActiveId(null)
     if (!over) return
 
     const jobId = active.id as string
@@ -88,7 +124,14 @@ export function Board() {
 
   return (
     <>
-      <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
+      <DndContext
+        sensors={sensors}
+        collisionDetection={closestCorners}
+        measuring={MEASURING}
+        onDragStart={handleDragStart}
+        onDragEnd={handleDragEnd}
+        onDragCancel={() => setActiveId(null)}
+      >
         <motion.div
           initial="hidden"
           animate="visible"
@@ -101,6 +144,10 @@ export function Board() {
             </motion.div>
           ))}
         </motion.div>
+
+        <DragOverlay dropAnimation={DROP_ANIMATION}>
+          {activeJob ? <JobCard job={activeJob} overlay /> : null}
+        </DragOverlay>
       </DndContext>
 
       <RejectionModal

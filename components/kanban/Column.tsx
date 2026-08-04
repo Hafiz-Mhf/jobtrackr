@@ -6,6 +6,7 @@ import { Bookmark, Send, Calendar, Award, XCircle } from 'lucide-react'
 import Link from 'next/link'
 import type { Job, JobStatus } from '@/types'
 import { STATUS_LABELS, STATUS_EMPTY_COPY, STATUS_ACCENT } from '@/lib/constants'
+import { cn } from '@/lib/utils'
 import { JobCard } from './JobCard'
 
 interface Props {
@@ -30,14 +31,19 @@ const STATUS_ICON_COLOR: Record<JobStatus, string> = {
 }
 
 export function Column({ status, jobs }: Props) {
-  const { setNodeRef } = useDroppable({ id: status })
+  const { setNodeRef, isOver } = useDroppable({ id: status })
   const accent = STATUS_ACCENT[status]
   const IconComponent = STATUS_ICONS[status]
 
   return (
     <div
       ref={setNodeRef}
-      className="min-h-[500px] flex flex-col bg-surface-muted/50 border border-[var(--color-border)] rounded-2xl p-3 shadow-sm"
+      data-over={isOver || undefined}
+      className={cn(
+        'min-h-[500px] flex flex-col bg-surface-muted/50 border border-[var(--color-border)] rounded-2xl p-3 shadow-sm',
+        'transition-colors duration-150',
+        isOver && 'bg-accent-light/40 border-accent ring-2 ring-accent/25'
+      )}
     >
       <div className="flex items-center justify-between mb-3 text-[13px] font-bold text-brand-muted uppercase tracking-wider px-1">
         <span className="flex items-center gap-1.5 text-brand-text">
@@ -51,7 +57,13 @@ export function Column({ status, jobs }: Props) {
       <SortableContext items={jobs.map((j) => j.id)} strategy={verticalListSortingStrategy}>
         <div className="flex-1 flex flex-col gap-2.5 min-h-[300px]">
           {jobs.length === 0 ? (
-            <div className="flex-1 flex flex-col items-center justify-center border border-dashed border-[var(--color-border)] rounded-2xl p-4 text-center gap-2 min-h-[150px]">
+            <div
+              className={cn(
+                'flex-1 flex flex-col items-center justify-center border border-dashed border-[var(--color-border)] rounded-2xl p-4 text-center gap-2 min-h-[150px]',
+                'transition-colors duration-150',
+                isOver && 'border-accent'
+              )}
+            >
               <div className="size-8 rounded-lg bg-surface flex items-center justify-center border border-[var(--color-border)]/50 shadow-sm shrink-0">
                 <IconComponent className={`size-4 ${STATUS_ICON_COLOR[status]}`} />
               </div>
