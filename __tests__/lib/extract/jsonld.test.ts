@@ -79,18 +79,18 @@ describe('extractJobPosting', () => {
     expect(extractJobPosting(html)?.location).toBe('Penang')
   })
 
-  it('substitutes the sentinel when hiringOrganization is missing', () => {
+  it('leaves company blank when hiringOrganization is missing', () => {
     const html = page(JSON.stringify({ '@type': 'JobPosting', title: 'Solo Role' }))
     const result = extractJobPosting(html)
     expect(result?.role).toBe('Solo Role')
-    expect(result?.company).toBe('Unknown Company')
+    expect(result?.company).toBe('')
   })
 
-  it('substitutes the sentinel when title is missing', () => {
+  it('leaves role blank when title is missing', () => {
     const html = page(JSON.stringify({ '@type': 'JobPosting', hiringOrganization: { name: 'Acme' } }))
     const result = extractJobPosting(html)
     expect(result?.company).toBe('Acme')
-    expect(result?.role).toBe('Unknown Role')
+    expect(result?.role).toBe('')
   })
 
   it('returns null when both title and company are missing', () => {

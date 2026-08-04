@@ -47,9 +47,9 @@ describe('parseJobDescription', () => {
     expect(result.description).toBe('Some JD text.')
   })
 
-  it('defaults company to Unknown Company when no match', () => {
+  it('leaves company blank when no match, rather than inventing a value', () => {
     const result = parseJobDescription('Just some text with no company marker.')
-    expect(result.company).toBe('Unknown Company')
+    expect(result.company).toBe('')
   })
 
   it('extracts company from an explicit "Company:" label', () => {
@@ -198,6 +198,66 @@ describe('parseJobDescription', () => {
   it('prevents role title from duplicating company name on single-word or short inputs', () => {
     const result = parseJobDescription('Deloitte')
     expect(result.company).toBe('Deloitte')
-    expect(result.role).toBe('Unknown Role')
+    expect(result.role).toBe('')
+  })
+
+  // --- Regressions from a real LinkedIn job page (see lib/extract/content-region.ts) ---
+
+  it('never returns a skip-link as the role', () => {
+    const result = parseJobDescription(
+      'Skip to main content\nFresher Data Analys (Entry / Junior Level)\nDroit de la famille Actu\nAustralia',
+    )
+    expect(result.role).not.toBe('Skip to main content')
+    expect(result.role).toBe('Fresher Data Analys (Entry / Junior Level)')
+  })
+
+  it('treats a truncated "Analys" as a role keyword', () => {
+    const result = parseJobDescription('Acme Corp\nData Analys (Junior)\nWe are hiring...')
+    expect(result.role).toBe('Data Analys (Junior)')
+  })
+
+  it('does not treat "analysis" in prose as a job title', () => {
+    const result = parseJobDescription('Deloitte\nWe do data analysis daily here at scale.\nApply now.')
+    expect(result.role).not.toContain('analysis')
+  })
+
+  it('keeps lowercase particles inside a company name after "at"', () => {
+    const result = parseJobDescription('Join to save Data Analyst at Droit de la famille Actu')
+    expect(result.company).toBe('Droit de la famille Actu')
+  })
+
+  it('does not leave a dangling particle at the end of a company name', () => {
+    const result = parseJobDescription('Save this job at Acme de')
+    expect(result.company).toBe('Acme')
+  })
+
+  it('keeps the currency prefix letter on A$ / S$ / C$ amounts', () => {
+    const result = parseJobDescription('Salary: A$75,000.00 - A$85,000.00 per year')
+    expect(result.salary_range).toContain('A$75,000.00')
+    expect(result.salary_range).toContain('85,000')
+  })
+
+  it('does not leave trailing whitespace on an extracted salary', () => {
+    const result = parseJobDescription('Pay is $130,000.00\nSomething else')
+    expect(result.salary_range).toBe(result.salary_range?.trim())
+  })
+
+  it('does not read a location out of a mid-sentence degree requirement', () => {
+    const result = parseJobDescription(
+      "Acme Corp\nData Analyst\nBachelor's degree (or currently completing) in Data Analytics, Computer Science, Statistics, Mathematics, or a related discipline.",
+    )
+    expect(result.location ?? '').not.toContain('Data Analytics')
+  })
+
+  it('still reads a location from a short standalone line', () => {
+    const result = parseJobDescription('Acme Corp\nData Analyst\nSydney, Australia\nApply now')
+    expect(result.location).toBe('Sydney, Australia')
+  })
+
+  it('filters LinkedIn chrome lines out of company detection', () => {
+    const result = parseJobDescription(
+      'Skip to main content\nSign in\nJoin now\nStripe\nSenior Engineer\nBe among the first 25 applicants',
+    )
+    expect(result.company).toBe('Stripe')
   })
 })

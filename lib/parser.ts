@@ -5,10 +5,11 @@ export function parseJobDescription(text: string, customTags: string[] = []): Pa
   const company = extractCompany(text)
   let role = extractRole(text)
 
-  // Safeguard: If the extracted role matches the company exactly on a single-line input, fallback to "Unknown Role"
+  // Safeguard: a single-line input yielding the same value for both means we
+  // found a company, not a title — leave the role blank for manual entry.
   const lines = text.split('\n').map((l) => l.trim()).filter(Boolean)
-  if (role.toLowerCase() === company.toLowerCase() && lines.length <= 1) {
-    role = 'Unknown Role'
+  if (company && role.toLowerCase() === company.toLowerCase() && lines.length <= 1) {
+    role = ''
   }
 
   return {
@@ -22,11 +23,17 @@ export function parseJobDescription(text: string, customTags: string[] = []): Pa
 }
 
 // Words that signal a line is a job title rather than a company or heading.
+// "analys" without the trailing "t" is deliberate — job boards truncate long
+// titles, so a real posting can read "Fresher Data Analys (Entry Level)".
 const ROLE_KEYWORDS =
-  /\b(engineer|developer|architect|manager|analyst|consultant|designer|specialist|administrator|coordinator|scientist|technician|programmer|lead|director|intern|associate|recruiter|accountant|auditor|support|helpdesk|help\s?desk|qa|tester|scrum\s*master|sre|reliability|ui\/ux|product\s*owner|product\s*manager)\b/i
+  /\b(engineer|developer|architect|manager|analys(?:t|ts)?|consultant|designer|specialist|administrator|coordinator|scientist|technician|programmer|lead|director|intern|associate|recruiter|accountant|auditor|support|helpdesk|help\s?desk|qa|tester|scrum\s*master|sre|reliability|ui\/ux|product\s*owner|product\s*manager)\b/i
 
 const LEGAL_SUFFIX_REGEX = /\b(Sdn\s*Bhd|Bhd|LLC|Ltd|Inc|Corp|Corporation|Pte\s*Ltd)\b/i
-const NOISE_LINES = /^(apply|share|save|posted|about|requirements|description|responsibilities|job|overview|company|employer|organization|search|sign\s*in|login|register)\b/i
+
+// Boilerplate that job-board shells put above the posting itself. Without this
+// the role falls back to a nav "Skip to main content" skip-link.
+const NOISE_LINES =
+  /^(apply|share|save|posted|about|requirements|description|responsibilities|job|overview|company|employer|organization|search|sign\s*in|login|register|skip\s+to\b|join\b|new\s+to\b|report\s+this\b|see\s+who\b|be\s+among\b|direct\s+message\b|show\s+more\b|show\s+less\b|similar\s+jobs\b|people\s+also\b|by\s+clicking\b|get\s+notified\b|continue\s+(?:to|with)\b)/i
 
 // Common Malaysian locations — matched before the generic "City, ST" regex so a real
 // place is recognised and a capitalised job-title fragment isn't mistaken for a location.
@@ -71,15 +78,21 @@ function extractRole(text: string): string {
   const levelPrefix = '(?:senior|junior|mid|lead|staff|principal|associate|director|head\\s+of)?\\s*'
   const rolePattern = '(?:frontend|backend|fullstack|full\\.stack|software|web|mobile|data|devops|cloud|ml|ai|qa|test|ui/ux|product|sre|system|network)'
   const roleKeyword = '(?:engineer|developer|architect|scientist|designer|manager|specialist|analyst|owner|lead|scrum\\s*master)'
-  const pattern = new RegExp(`${levelPrefix}${rolePattern}\\s*${roleKeyword}`, 'i')
+  // The trailing \b stops "data analysis" in prose from reading as "data analyst".
+  const pattern = new RegExp(`${levelPrefix}${rolePattern}\\s*${roleKeyword}\\b`, 'i')
 
   for (const line of lines.slice(0, 8)) {
+    if (NOISE_LINES.test(line)) continue
     const match = line.match(pattern)
-    if (match) return cleanRole(match[0])
+    // A short line that contains the pattern is the title itself, so keep the
+    // whole line — otherwise "Fresher Data Analys (Junior)" collapses to
+    // "Data Analys". Long lines are prose, so keep only the matched fragment.
+    if (match) return cleanRole(line.length <= 80 ? line : match[0])
   }
 
   // 3. First short line that reads like a job title (contains a role keyword)
   for (const line of lines.slice(0, 8)) {
+    if (NOISE_LINES.test(line)) continue
     if (line.length <= 80 && ROLE_KEYWORDS.test(line)) return cleanRole(line)
   }
 
@@ -88,13 +101,24 @@ function extractRole(text: string): string {
     if (!NOISE_LINES.test(line) && line.length <= 60) return cleanRole(line)
   }
 
-  return lines[0] ? cleanRole(lines[0]) : 'Unknown Role'
+  // Nothing credible found — leave it blank for manual entry rather than
+  // prefilling a value the user has to notice is wrong.
+  return ''
 }
 
+// Prefixed dollars (A$, S$, C$…) come first so the currency letter is not left
+// behind — matching a bare "$" inside "A$75,000" would report the wrong currency.
+const CURRENCY = '(?:RM|MYR|SGD|USD|AUD|NZD|CAD|HKD|A\\$|S\\$|C\\$|NZ\\$|HK\\$|US\\$|R\\$|\\$|£|€|¥|Rs)'
+
 function extractSalary(text: string): string | undefined {
-  const salaryRegex = /(?:RM|MYR|SGD|USD|\$|£|€|¥|Rs)\s*\d+(?:[\d,.]*\d)?\s*[kK]?(?:\s*(?:-|–|to)\s*(?:RM|MYR|SGD|USD|\$|£|€|¥|Rs)?\s*\d+(?:[\d,.]*\d)?\s*[kK]?)?(?:\s*(?:\/|per\s+)?(?:yr|year|annually|mo|month|monthly|hr|hour|hourly))?/i
+  const amount = '\\d+(?:[\\d,.]*\\d)?\\s*[kK]?'
+  const period = '(?:\\s*(?:\\/|per\\s+)?(?:yr|year|annually|mo|month|monthly|hr|hour|hourly))?'
+  const salaryRegex = new RegExp(
+    `${CURRENCY}\\s*${amount}(?:[ \\t]*(?:-|–|to)[ \\t]*${CURRENCY}?\\s*${amount})?${period}`,
+    'i'
+  )
   const match = text.match(salaryRegex)
-  return match?.[0]
+  return match?.[0].trim() || undefined
 }
 
 const WORK_MODE_REGEX = /\b(remote|hybrid|on[.\-\s]?site|onsite|in[.\-\s]?office|office[\-\s]?based|wfh|work\s+from\s+home)\b/i
@@ -130,10 +154,14 @@ function extractLocation(text: string): string | undefined {
     return myCity
   }
 
-  // 3. "City, ST" / "City, Country"
-  const cityMatch = text.match(/\b([A-Z][a-z]+(?:\s[A-Z][a-z]+)*,\s*(?:[A-Z]{2,}|[A-Z][a-z]+))\b/)
-  if (cityMatch?.[1]) {
-    const geo = cityMatch[1]
+  // 3. "City, ST" / "City, Country" — only on short standalone lines. Scanning
+  // the whole text matches prose such as "degree in Data Analytics, Computer
+  // Science", which is a requirement sentence, not a place.
+  const geoRegex = /\b([A-Z][a-z]+(?:\s[A-Z][a-z]+)*,\s*(?:[A-Z]{2,}|[A-Z][a-z]+))\b/
+  for (const line of nonEmptyLines(text)) {
+    if (line.length > 60) continue
+    const geo = line.match(geoRegex)?.[1]
+    if (!geo) continue
     if (workMode && !new RegExp(workMode, 'i').test(geo)) {
       return `${geo} (${workMode})`
     }
@@ -166,9 +194,12 @@ function extractCompany(text: string): string {
     if (NOISE_LINES.test(line)) continue
   }
 
-  // 3. "at <Company>" / "@ <Company>" — capture up to 4 capitalised words
-  const atMatch = text.match(/\b(?:at|@)\s+([A-Z][A-Za-z0-9&.'-]+(?:\s+[A-Z][A-Za-z0-9&.'-]+){0,3})/)
-  if (atMatch?.[1]) return cleanValue(atMatch[1])
+  // 3. "at <Company>" / "@ <Company>". Lowercase words are allowed mid-name so
+  // "Droit de la famille Actu" survives instead of truncating to "Droit"; the
+  // trailing ones are then trimmed off so prose ("at Stripe to help us build")
+  // does not run into the name. [ \t] keeps the match on one line.
+  const atMatch = text.match(/\b(?:at|@)[ \t]+([A-Z][A-Za-z0-9&.'-]*(?:[ \t]+[A-Za-z0-9&.'-]+){0,5})/)
+  if (atMatch?.[1]) return trimToLastCapitalised(cleanValue(atMatch[1]))
 
   // 4. First-line heuristic (excluding noise lines)
   for (const line of lines.slice(0, 5)) {
@@ -176,7 +207,18 @@ function extractCompany(text: string): string {
     if (isLikelyCompany(line)) return line
   }
 
-  return 'Unknown Company'
+  // Blank rather than a placeholder — the form treats it as "not detected".
+  return ''
+}
+
+// A company name may run through lowercase words but always ends on a
+// capitalised one, so "Acme de" becomes "Acme" and "Stripe to help us" becomes
+// "Stripe", while "Droit de la famille Actu" is kept whole.
+function trimToLastCapitalised(name: string): string {
+  const words = name.split(/\s+/)
+  let end = words.length
+  while (end > 1 && !/^[A-Z0-9]/.test(words[end - 1])) end--
+  return words.slice(0, end).join(' ')
 }
 
 function isLikelyCompany(line: string): boolean {
