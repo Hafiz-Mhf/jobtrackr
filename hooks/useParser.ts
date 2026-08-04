@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { parseJobDescription } from '@/lib/parser'
 import { matchCustomTags, normalizeTag } from '@/lib/skills'
 import { EXTRACT_ERROR_MESSAGES } from '@/lib/extract/errors'
+import type { MetaJobFields } from '@/lib/extract/metadata'
 import type { ParsedJob } from '@/types'
 
 export type ParsedJobWithUrl = ParsedJob & { url?: string }
@@ -11,6 +12,7 @@ export type ParsedJobWithUrl = ParsedJob & { url?: string }
 interface FetchUrlResponse {
   jobPosting: ParsedJob | null
   text: string | null
+  meta?: MetaJobFields | null
 }
 
 export function useParser() {
@@ -59,7 +61,22 @@ export function useParser() {
         return merged
       }
 
-      return parse(data.text ?? '', customTags)
+      const parsed = parse(data.text ?? '', customTags)
+      if (!parsed) return null
+
+      // Page metadata is a declared field, so it outranks anything scraped out
+      // of the visible text. Only fields the page actually declared override.
+      const meta = data.meta
+      if (!meta) return parsed
+
+      const merged: ParsedJob = {
+        ...parsed,
+        company: meta.company ?? parsed.company,
+        role: meta.role ?? parsed.role,
+        location: meta.location ?? parsed.location,
+      }
+      setResult(merged)
+      return merged
     } finally {
       setLoading(false)
     }

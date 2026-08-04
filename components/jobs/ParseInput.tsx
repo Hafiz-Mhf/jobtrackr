@@ -23,8 +23,8 @@ export function ParseInput({ onParsed, onManual }: Props) {
 
   function reportFieldsFound(parsed: ParsedJob) {
     const fieldsFound = [
-      parsed.company !== 'Unknown Company',
-      Boolean(parsed.role) && parsed.role !== 'Unknown Role',
+      Boolean(parsed.company),
+      Boolean(parsed.role),
       Boolean(parsed.salary_range),
       Boolean(parsed.location),
       parsed.tags.length > 0,

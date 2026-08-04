@@ -101,8 +101,9 @@ function mapJobPosting(node: JsonObject): ParsedJob | null {
   const description = htmlToText(str(node['description']) ?? '')
 
   return {
-    company: company ?? 'Unknown Company',
-    role: role ?? 'Unknown Role',
+    // Blank, not a placeholder — the form shows it as an empty required field.
+    company: company ?? '',
+    role: role ?? '',
     salary_range: readSalary(node),
     location: readLocation(node),
     tags: [...new Set(matchDictionary(description).map(normalizeTag))],

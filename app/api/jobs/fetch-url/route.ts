@@ -5,6 +5,8 @@ import { ExtractError, EXTRACT_ERROR_MESSAGES, type ExtractErrorCode } from '@/l
 import { fetchJobPage } from '@/lib/extract/fetch-page'
 import { extractJobPosting } from '@/lib/extract/jsonld'
 import { htmlToText } from '@/lib/extract/html-to-text'
+import { isolateJobContent } from '@/lib/extract/content-region'
+import { readMetaJobFields } from '@/lib/extract/metadata'
 import { checkRateLimit } from '@/lib/extract/rate-limit'
 
 // dns.promises in the URL guard requires the Node.js runtime.
@@ -57,15 +59,27 @@ export async function POST(req: NextRequest) {
             description: jobPosting.description.slice(0, MAX_TEXT_LENGTH),
           },
           text: null,
+          meta: null,
         },
       })
     }
 
-    const text = htmlToText(html)
+    // Scope to the posting container so the sidebar's "similar jobs" salaries
+    // and unrelated skill tags stay out of the parse. If that region turns out
+    // to be too thin to be the real posting, fall back to the whole document.
+    const region = isolateJobContent(html)
+    const regionText = region ? htmlToText(region) : ''
+    const fullText = htmlToText(html)
+    const text = regionText.length >= MIN_USEFUL_TEXT ? regionText : fullText
+
     if (text.length < MIN_USEFUL_TEXT) return fail('no_content')
 
+    // LinkedIn and friends ship no JSON-LD but do expose accurate Open Graph
+    // tags, which beat scraping headline fields out of the page chrome.
+    const meta = readMetaJobFields(html)
+
     return NextResponse.json({
-      data: { jobPosting: null, text: text.slice(0, MAX_TEXT_LENGTH) },
+      data: { jobPosting: null, text: text.slice(0, MAX_TEXT_LENGTH), meta },
     })
   } catch (error) {
     // Log the code only — never the fetched body, never the URL.
