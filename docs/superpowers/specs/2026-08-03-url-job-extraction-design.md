@@ -182,6 +182,18 @@ Measured 2026-08-03 against real postings. The original premise — that Greenho
 
 This is why the text fallback carries the design rather than being a safety net: for Greenhouse — a major board — it is the only path. It also motivated the `no_content` case: without a minimum-content floor, an Ashby link would have prefilled the form with the word "Jobs" as the job description.
 
+### Malaysian portals (2026-08-04)
+
+Checked on request against the portals listed in `APPLICATION_SOURCES`. No code changed — the design was already generic (any `https:` URL, no per-site allowlist), so "support" here means only: does that portal's real page carry `JobPosting` JSON-LD or usable text.
+
+| Portal | Outcome | Notes |
+|---|---|---|
+| JobStreet (`my.jobstreet.com`) | Text fallback | No `ld+json` job schema, but the job page is server-rendered with role, company, location, and salary all present in plain text (~5.2k chars). |
+| Maukerja (`maukerja.my`) | JSON-LD hit | Full `JobPosting` schema: title, hiringOrganization, jobLocation with locality+region, baseSalary with min/max/unit. Maps cleanly through the existing mapper. |
+| Ricebowl (`ricebowl.my`) | JSON-LD hit | Same ATS backend as Maukerja (both AJobThing brands) — byte-identical `JobPosting` shape on the job-detail page. Its `/jobsearch` listing page is a client-rendered Nuxt shell, but that's not the page a user pastes. |
+| Indeed (`indeed.com`) | `blocked` | 403 to a non-browser user agent, same as the earlier finding. |
+| MyFutureJobs (`myfuturejobs.gov.my`) | Not extractable — no code fixes this | The public site is a WordPress marketing page; actual job postings live behind Keycloak login on `candidates.myfuturejobs.gov.my`. There is no public job-detail URL to paste in the first place. A pasted link here correctly lands on manual entry with only the URL preserved — the right outcome for an auth-walled site, not a gap. |
+
 ## Rejected alternatives
 
 **Fat server route** — server fetches, extracts, and runs `lib/parser.ts` itself, returning a finished `ParsedJob`. One fewer branch on the client, but it moves parsing server-side against the stated architecture and forces `customTags` (client state from `TagsProvider`) up in the request body.
