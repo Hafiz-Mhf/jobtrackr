@@ -21,6 +21,7 @@ import { motion } from 'framer-motion'
 import { Briefcase, Plus } from 'lucide-react'
 import Link from 'next/link'
 import { useJobs } from '@/hooks/useJobs'
+import { usePrefersReducedMotion } from '@/hooks/usePrefersReducedMotion'
 import { JOB_STATUSES } from '@/lib/constants'
 import { stagger, fadeUp } from '@/lib/animations'
 import type { Job, JobStatus } from '@/types'
@@ -64,6 +65,9 @@ export function Board() {
   const [pendingRejectId, setPendingRejectId] = useState<string | null>(null)
   const [activeId, setActiveId] = useState<string | null>(null)
   const activeJob = activeId ? jobs.find((j) => j.id === activeId) : undefined
+  // The drop animation runs through the Web Animations API, so the global
+  // reduced-motion CSS rule cannot suppress it — opt out here instead.
+  const reducedMotion = usePrefersReducedMotion()
 
   function commitStatus(jobId: string, status: JobStatus, reason?: string) {
     updateJobStatus(jobId, status, reason).catch(() => {
@@ -145,7 +149,7 @@ export function Board() {
           ))}
         </motion.div>
 
-        <DragOverlay dropAnimation={DROP_ANIMATION}>
+        <DragOverlay dropAnimation={reducedMotion ? null : DROP_ANIMATION}>
           {activeJob ? <JobCard job={activeJob} overlay /> : null}
         </DragOverlay>
       </DndContext>

@@ -511,6 +511,10 @@ Constraints that are easy to break by accident:
   `overflow-x-auto` and would otherwise clip it mid-column-change.
 - **Keep `TouchSensor`'s activation delay.** The whole card is the drag handle,
   so without a long-press the board cannot be scrolled on touch devices.
+- **JS-driven animations must check `usePrefersReducedMotion`.** The global
+  reduced-motion rule in `globals.css` only overrides `animation-duration` and
+  `transition-duration`, so it cannot reach the Web Animations API (dnd-kit's
+  drop animation) or Framer Motion. `PRODUCT.md` commits to motion restraint.
 
 ### Reminder Feature Implementation
 
