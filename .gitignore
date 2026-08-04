@@ -44,3 +44,7 @@ next-env.d.ts
 .superpowers/
 .impeccable/
 skills-lock.json
+.playwright-mcp/
+
+# docs (specs/plans) — local only, not tracked
+docs/
