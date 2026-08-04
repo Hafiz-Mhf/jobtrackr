@@ -37,12 +37,26 @@ Job hunting is chaotic. Most developers end up juggling:
 ## ✨ Features
 
 ### 🔍 Smart JD Parser
-Paste any raw job description and JobTrackr instantly extracts:
+Paste a raw job description **or just the posting's URL**, and JobTrackr extracts:
 - Company name, role title, salary range, and location
 - Tech tags (React, Node.js, SQL, Docker, etc.) via an alias-aware skills dictionary
 - Custom tags you've taught it — it learns from you over time
 
 > **Zero AI API calls.** All parsing runs client-side using regex heuristics and a curated skills dictionary — instant feedback, no spinners, no cost.
+
+**Paste a link instead.** Drop in a job URL and the server fetches the page, then works down three levels of confidence:
+
+| Level | Source | Used when |
+|-------|--------|-----------|
+| 1 | `JobPosting` JSON-LD | The board publishes structured data (Lever, Maukerja, Ricebowl) |
+| 2 | Open Graph metadata | No JSON-LD, but the page declares `og:title` etc. (LinkedIn) |
+| 3 | Scoped page text | Neither — the posting container is isolated, then parsed |
+
+Level 3 never reads the whole page. The posting's own container is located first (`description__text`, `#jobDescriptionText`, `data-automation`, then `<article>` / `<main>`), so a "similar jobs" sidebar can't contribute another job's salary or unrelated tech tags to your entry.
+
+When a field can't be determined with confidence, it's **left blank** rather than filled with a guess — an empty box is easier to catch than a plausible wrong answer.
+
+> URL fetching is rate-limited per user, restricted to `https:`, and guarded against private/internal addresses. Auth-walled sites (Indeed, MyFutureJobs) fall back to manual entry with your link preserved.
 
 ---
 
@@ -53,7 +67,9 @@ A drag-and-drop board that mirrors your real hiring funnel:
 Saved → Applied → Interview → Offer → Rejected
 ```
 
-- Move cards between columns with a smooth drag
+- The dragged card is lifted into an overlay layer so it tracks the cursor exactly and is never clipped when crossing columns
+- The column under the cursor highlights, and the card's original slot stays open as a dimmed placeholder
+- On touch devices a short long-press starts the drag, so the board still scrolls normally
 - Dropping a card into **Rejected** prompts for a reason (so you can spot patterns over time)
 - Filter and search across all your applications in one view
 
@@ -136,12 +152,30 @@ jobtrackr/
 │   └── ui/                 # shadcn auto-generated components
 ├── lib/
 │   ├── parser.ts           # Client-side JD text parser
+│   ├── extract/            # URL fetch → JSON-LD, Open Graph, content region
 │   ├── interview-questions.ts  # Curated question bank
 │   ├── reminders.ts        # Stale job detection logic
 │   └── supabase/           # Browser + server clients
+├── contexts/               # JobsProvider, TagsProvider
 ├── hooks/                  # useJobs, useParser, useReminders
 └── types/                  # Shared TypeScript interfaces
 ```
+
+<details>
+<summary><strong>Inside <code>lib/extract/</code></strong></summary>
+
+| File | Responsibility |
+|------|----------------|
+| `fetch-page.ts` | Fetches the URL with a byte cap, timeout, and manual redirect re-validation |
+| `url-guard.ts` | Rejects non-`https:`, credentials in the URL, and private/internal hosts |
+| `jsonld.ts` | Reads `JobPosting` structured data — the highest-confidence source |
+| `metadata.ts` | Open Graph fallback for boards that ship no JSON-LD |
+| `content-region.ts` | Isolates the posting container so page chrome is never parsed |
+| `html-to-text.ts` | Flattens HTML to text, dropping script/style/nav/footer |
+| `rate-limit.ts` | Per-user request throttle |
+| `errors.ts` | Typed error codes mapped to human-readable copy |
+
+</details>
 
 ---
 
@@ -275,7 +309,9 @@ Open [http://localhost:3000](http://localhost:3000) and start tracking! 🎉
 npm run test
 ```
 
-Tests use [Vitest](https://vitest.dev). The test suite covers the client-side parser logic and reminder detection.
+Tests use [Vitest](https://vitest.dev) — 186 tests across 14 files, covering the client-side parser, the URL extraction pipeline (JSON-LD mapping, Open Graph, content-region isolation, HTML flattening, URL guards, rate limiting), reminder detection, stats, validation, and tag learning.
+
+The extraction tests are regression-driven: each one pins a failure seen against a real job posting, so the fixtures read like a list of ways job boards break naive scraping.
 
 ---
 
@@ -306,7 +342,8 @@ JobTrackr takes data security seriously:
 
 ## 🗺 Roadmap
 
-- [ ] **Chrome Extension** — parse JDs directly from job board pages without copy-pasting
+- [x] **Paste a job URL** — fetch and extract without copying the description by hand
+- [ ] **Chrome Extension** — capture postings from auth-walled boards a server fetch can't reach
 - [ ] **CSV Import** — migrate your existing spreadsheet in seconds
 - [ ] **Email Reminders** — opt-in follow-up nudges sent to your inbox
 - [ ] **Application Analytics** — response rate, average time-to-response by source

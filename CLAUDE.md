@@ -95,6 +95,15 @@ jobtrackr/
 │   ├── supabase/
 │   │   ├── client.ts               # Browser client
 │   │   └── server.ts               # Server client (RSC / API routes)
+│   ├── extract/                    # URL → job fields (server-side, see below)
+│   │   ├── fetch-page.ts           # Capped, timed fetch with manual redirects
+│   │   ├── url-guard.ts            # https-only, blocks private/internal hosts
+│   │   ├── jsonld.ts               # JobPosting structured data (level 1)
+│   │   ├── metadata.ts             # Open Graph fallback (level 2)
+│   │   ├── content-region.ts       # Isolates the posting container (level 3)
+│   │   ├── html-to-text.ts         # HTML → text, drops script/style/nav/footer
+│   │   ├── rate-limit.ts           # Per-user throttle
+│   │   └── errors.ts               # Typed codes → human-readable copy
 │   ├── parser.ts                   # Client-side JD text parser (regex + heuristics)
 │   ├── interview-questions.ts      # Curated question bank keyed by tech tag
 │   ├── reminders.ts                # Stale job detection logic
@@ -267,6 +276,42 @@ function extractTags(text: string, customTags: string[] = []): string[] {
   return [...new Set(merged)]
 }
 ```
+
+### Pasting a URL instead of text
+
+`POST /api/jobs/fetch-url` fetches the page server-side (the browser cannot, due
+to CORS) and works down three levels of confidence. Full rationale and the
+measured behaviour of each job board live in
+`docs/superpowers/specs/2026-08-03-url-job-extraction-design.md`.
+
+| Level | Source | Module |
+|---|---|---|
+| 1 | `JobPosting` JSON-LD | `lib/extract/jsonld.ts` |
+| 2 | Open Graph metadata | `lib/extract/metadata.ts` |
+| 3 | Text of the **scoped** posting container | `lib/extract/content-region.ts` → `lib/parser.ts` |
+
+Rules when working in this area:
+
+- **Never parse the whole page.** Always scope through `isolateJobContent` first.
+  Job boards surround the posting with a "similar jobs" sidebar; parsing the
+  shell pulled another job's salary and unrelated tags into the form.
+- **Declared metadata outranks scraped text.** Only fields the page actually
+  declared may override the parsed result.
+- **Container hints only, never field selectors.** `content-region.ts` may know
+  that LinkedIn wraps postings in `.description__text`, but no field is ever
+  read from a per-site rule — if every hint misses, the generic path still runs.
+- **Do not spoof the user agent.** LinkedIn serves zero JSON-LD to bot, Chrome,
+  and Googlebot alike; this was measured, and spoofing gains nothing.
+- **`lib/parser.ts` stays client-side.** The route returns text plus metadata;
+  merging happens in `hooks/useParser.ts`, where the user's custom tags live.
+
+### Unknown fields are blank, never a placeholder
+
+When company or role cannot be determined, both `lib/parser.ts` and
+`lib/extract/jsonld.ts` return `''` — not `'Unknown Company'` / `'Unknown Role'`.
+The form then shows an empty required field, which the user notices, rather than
+a plausible-looking wrong value, which they may not. Do not reintroduce sentinel
+strings.
 
 ### Interview Question Bank
 
@@ -449,6 +494,24 @@ Full detail in `docs/superpowers/specs/2026-07-03-jobtrackr-mvp-design.md` (Secu
 - **Do not install new packages** without flagging it first and explaining why the existing stack can't handle it.
 - **Do not modify the DB schema** without first showing the migration SQL and getting confirmation.
 
+### Kanban Drag-and-Drop
+
+Design notes in `docs/superpowers/specs/2026-08-04-kanban-dnd-polish-design.md`.
+Constraints that are easy to break by accident:
+
+- **Never put a CSS `transition` on a draggable card.** dnd-kit rewrites the
+  transform every pointer frame; any transition eases each rewrite and the card
+  visibly trails the cursor. Use only the `transition` value `useSortable`
+  returns, forced to `none` while `isDragging`.
+- **Hover/active transforms must be gated on `:not([data-dragging])`.** A drag
+  holds the pointer down over the card, so `:active` fires throughout.
+- **Emit `data-dragging` only when true** (`isDragging || undefined`) —
+  `data-dragging="false"` is still a present attribute and matches the selector.
+- **The dragged card renders in `<DragOverlay>`**, not in place: the board is
+  `overflow-x-auto` and would otherwise clip it mid-column-change.
+- **Keep `TouchSensor`'s activation delay.** The whole card is the drag handle,
+  so without a long-press the board cannot be scrolled on touch devices.
+
 ### Reminder Feature Implementation
 
 Follow-up reminders are **in-app only**. Logic:
@@ -464,6 +527,7 @@ Build these. Nothing else until they work end-to-end.
 
 - [x] Auth (login / logout / Google OAuth)
 - [x] Add job via JD paste (client-side parse)
+- [x] Add job via posting URL (server fetch → JSON-LD / Open Graph / scoped text)
 - [x] Add job manually (fallback form)
 - [x] Kanban board with drag-and-drop
 - [x] Job detail page
