@@ -21,7 +21,9 @@ export function Skeleton({ className }: SkeletonProps) {
 /* ── Board Skeleton ── */
 function ColumnSkeleton() {
   return (
-    <div className="flex-1 min-w-[240px] max-w-[285px] min-h-[500px] flex flex-col bg-surface-muted/50 border border-[var(--color-border)] rounded-2xl p-3">
+    // Mirrors Column.tsx's flat lane — no border, no surface, no shadow — so
+    // the board doesn't visibly re-draw itself when the real data lands.
+    <div className="flex-1 min-w-[240px] max-w-[285px] min-h-[500px] flex flex-col rounded-2xl p-2 xl:min-w-0 xl:max-w-none">
       {/* Column header */}
       <div className="flex items-center justify-between mb-3 px-1">
         <Skeleton className="h-3.5 w-20" />
@@ -62,7 +64,7 @@ function ColumnSkeleton() {
 
 export function BoardSkeleton() {
   return (
-    <div className="flex gap-3 p-6 pt-4 items-start min-h-[calc(100vh-var(--topbar-height)-110px)] overflow-hidden">
+    <div className="flex gap-3 px-6 pb-6 pt-4 items-start overflow-hidden xl:grid xl:grid-cols-5">
       {Array.from({ length: 5 }).map((_, i) => (
         <ColumnSkeleton key={i} />
       ))}
@@ -96,7 +98,7 @@ export function StatsBarSkeleton() {
 /* ── Job List Skeleton ── */
 export function JobListSkeleton() {
   return (
-    <div className="p-6 max-w-max-content-width mx-auto flex flex-col gap-6">
+    <div className="p-6 max-w-[var(--content-max)] mx-auto flex flex-col gap-6">
       {/* Header */}
       <div className="pb-4 border-b border-[var(--color-border)]">
         <Skeleton className="h-3 w-32" />
@@ -142,10 +144,49 @@ export function JobListSkeleton() {
   )
 }
 
+/* ── Reminders Skeleton ── */
+export function RemindersSkeleton() {
+  return (
+    <div className="p-6 max-w-[var(--content-max)] mx-auto flex flex-col gap-8">
+      {/* Header */}
+      <div className="space-y-2">
+        <Skeleton className="h-8 w-48" />
+        <Skeleton className="h-4 w-full max-w-2xl" />
+      </div>
+      {/* Reminder cards */}
+      <div className="grid gap-4">
+        {Array.from({ length: 2 }).map((_, i) => (
+          <div
+            key={i}
+            className="bg-surface border border-[var(--color-border)] rounded-2xl p-6 flex flex-col md:flex-row md:items-center justify-between gap-6"
+            style={{ opacity: 1 - i * 0.25 }}
+          >
+            <div className="flex items-start gap-4">
+              <Skeleton className="w-14 h-14 rounded-xl shrink-0" />
+              <div className="space-y-2">
+                <Skeleton className="h-5 w-40" />
+                <Skeleton className="h-3.5 w-28" />
+                <div className="flex gap-1.5 pt-1">
+                  <Skeleton className="h-4 w-14 rounded" />
+                  <Skeleton className="h-4 w-16 rounded" />
+                </div>
+              </div>
+            </div>
+            <div className="flex flex-col sm:flex-row md:flex-col md:items-end gap-3 shrink-0">
+              <Skeleton className="h-8 w-44 rounded-lg" />
+              <Skeleton className="h-11 w-40 rounded-xl" />
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 /* ── Job Detail Skeleton ── */
 export function JobDetailSkeleton() {
   return (
-    <div className="p-6 max-w-max-content-width mx-auto flex flex-col gap-6">
+    <div className="p-6 max-w-[var(--content-max)] mx-auto flex flex-col gap-6">
       {/* Breadcrumb */}
       <div className="flex items-center gap-3 pb-4 border-b border-[var(--color-border)]">
         <Skeleton className="w-8 h-8 rounded-full" />
