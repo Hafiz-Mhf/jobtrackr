@@ -6,9 +6,12 @@ import { createClient } from '@/lib/supabase/client'
 
 const BENEFITS = [
   {
+    // Not "AI parsing": there is no model here, and the footer of this very
+    // panel promises "no AI subscription required". The parser is local
+    // pattern-matching, which is the actual selling point — nothing to pay for.
     icon: FileText,
-    title: 'Instant AI Parsing',
-    description: 'Paste any job description to automatically extract roles, requirements, and tech stacks.',
+    title: 'Instant job parsing',
+    description: 'Paste a job description or link and the details fill themselves in — all on your device.',
   },
   {
     icon: LayoutGrid,
@@ -45,8 +48,10 @@ function GoogleLogo() {
   )
 }
 
+type Mode = 'sign-in' | 'sign-up' | 'reset'
+
 export default function LoginPage() {
-  const [mode, setMode] = useState<'sign-in' | 'sign-up'>('sign-in')
+  const [mode, setMode] = useState<Mode>('sign-in')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
@@ -62,6 +67,20 @@ export default function LoginPage() {
     setError(null)
     setInfo(null)
     setLoading(true)
+
+    if (mode === 'reset') {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/callback?next=/update-password`,
+      })
+      setLoading(false)
+      if (error) {
+        setError("Couldn't send the reset link. Try again in a moment.")
+        return
+      }
+      // Worded so it reveals nothing about whether the address is registered.
+      setInfo('If that email has an account, a reset link is on its way.')
+      return
+    }
 
     if (mode === 'sign-up') {
       if (!consentChecked) {
@@ -112,16 +131,17 @@ export default function LoginPage() {
   return (
     <main className="min-h-screen flex bg-background text-on-background relative overflow-hidden">
       {/* Background Animated Blobs for entire page on mobile */}
-      <div className="absolute inset-0 z-0 pointer-events-none opacity-20 lg:opacity-10">
+      <div className="absolute inset-0 z-0 pointer-events-none opacity-20 lg:opacity-10" aria-hidden="true">
         <div className="absolute top-0 left-0 w-80 h-80 rounded-full bg-accent/20 blur-3xl" />
         <div className="absolute bottom-0 right-0 w-80 h-80 rounded-full bg-accent/10 blur-3xl" />
       </div>
 
       {/* Left Side: Aurora Illustration (Desktop only) */}
       <section className="hidden lg:flex lg:w-1/2 flex-col justify-between p-12 bg-surface-muted border-r border-[var(--color-border)] relative overflow-hidden z-10">
-        {/* Animated Aurora Backdrop */}
-        <div className="absolute inset-0 z-0 pointer-events-none">
-          <div className="absolute -top-20 -left-20 w-[500px] h-[500px] rounded-full bg-accent/5 blur-[100px] animate-pulse" />
+        {/* Aurora Backdrop — the 500px blob used to animate-pulse forever, which
+            is a lot of motion to put behind a sign-in form. */}
+        <div className="absolute inset-0 z-0 pointer-events-none" aria-hidden="true">
+          <div className="absolute -top-20 -left-20 w-[500px] h-[500px] rounded-full bg-accent/5 blur-[100px]" />
           <div className="absolute bottom-0 right-0 w-[400px] h-[400px] rounded-full bg-purple-500/5 blur-[100px]" />
         </div>
 
@@ -136,10 +156,13 @@ export default function LoginPage() {
         {/* Dynamic Visual Pitch */}
         <div className="relative z-10 flex-1 flex flex-col justify-center space-y-10 max-w-md mx-auto">
           <div className="space-y-4">
-            <h1 className="text-3xl xl:text-4xl font-extrabold leading-tight text-brand-text tracking-tight">
+            {/* Styled as a headline but not a heading: this panel is
+                `hidden lg:flex`, so promoting it left the page with no h1 at
+                all on mobile. The form's heading is the real h1. */}
+            <p className="text-3xl xl:text-4xl font-extrabold leading-tight text-brand-text tracking-tight">
               Take control of your <br />
               <span className="text-accent">job search pipeline.</span>
-            </h1>
+            </p>
             <p className="text-brand-muted text-sm xl:text-base leading-relaxed">
               A calm, unified workspace designed to organize your applications, track follow-ups, and accelerate your path to the next offer.
             </p>
@@ -159,8 +182,12 @@ export default function LoginPage() {
             ))}
           </div>
 
-          {/* Floating UI Glass Mockup Card */}
-          <div className="glass-panel rounded-2xl p-5 border border-white/50 shadow-lg text-left relative overflow-hidden group hover:-translate-y-1 transition-all duration-300">
+          {/* Floating UI Glass Mockup Card — decorative only, so it no longer
+              lifts on hover as if it were interactive. */}
+          <div
+            className="glass-panel rounded-2xl p-5 border border-white/50 shadow-lg text-left relative overflow-hidden"
+            aria-hidden="true"
+          >
             <div className="flex items-center gap-3 mb-3">
               <div className="h-3 w-3 rounded-full bg-[var(--color-offer)]" />
               <div className="h-2 w-28 bg-accent/20 rounded-full" />
@@ -190,28 +217,37 @@ export default function LoginPage() {
 
         <div className="w-full max-w-[360px] space-y-6">
           <header className="space-y-1">
-            <h2 className="font-extrabold text-brand-text text-2xl tracking-tight">
-              {mode === 'sign-in' ? 'Welcome back' : 'Create your account'}
-            </h2>
+            <h1 className="font-extrabold text-brand-text text-2xl tracking-tight">
+              {mode === 'sign-in'
+                ? 'Welcome back'
+                : mode === 'sign-up'
+                  ? 'Create your account'
+                  : 'Reset your password'}
+            </h1>
             <p className="text-xs md:text-sm text-brand-muted leading-relaxed">
               {mode === 'sign-in'
                 ? 'Please enter your details to sign in.'
-                : 'Takes less than a minute — no credit card, ever.'}
+                : mode === 'sign-up'
+                  ? 'Takes less than a minute — no credit card, ever.'
+                  : 'Enter your email and we’ll send you a link to set a new password.'}
             </p>
           </header>
 
-          {/* Social Sign-in button */}
+          {/* Social Sign-in button — irrelevant when asking for a reset link. */}
+          {mode !== 'reset' && (
           <button
             type="button"
             onClick={handleGoogleAuth}
             disabled={loading}
-            className="w-full flex items-center justify-center gap-3 border border-[var(--color-border)] rounded-xl py-3 px-4 bg-surface hover:bg-surface-muted transition-all active:scale-[0.98] font-bold text-sm text-brand-text cursor-pointer shadow-sm hover:shadow-md"
+            className="w-full min-h-11 flex items-center justify-center gap-3 border border-[var(--color-border)] rounded-xl py-3 px-4 bg-surface hover:bg-surface-muted transition-colors active:scale-[0.98] font-bold text-sm text-brand-text cursor-pointer shadow-sm hover:shadow-md focus-ring disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <GoogleLogo />
             <span>Continue with Google</span>
           </button>
+          )}
 
           {/* Or Divider */}
+          {mode !== 'reset' && (
           <div className="flex items-center gap-3">
             <div className="h-px flex-1 bg-[var(--color-border)]" />
             <span className="text-[10px] md:text-xs text-brand-muted uppercase font-bold tracking-wider">
@@ -219,6 +255,7 @@ export default function LoginPage() {
             </span>
             <div className="h-px flex-1 bg-[var(--color-border)]" />
           </div>
+          )}
 
           {/* Form */}
           <form onSubmit={handleEmailAuth} className="space-y-4">
@@ -236,20 +273,29 @@ export default function LoginPage() {
                   placeholder="you@example.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full border border-[var(--color-border)] rounded-xl pl-10 pr-4 py-2.5 text-sm bg-surface text-brand-text focus:ring-4 focus:ring-accent/5 focus:border-accent focus:outline-none transition-all placeholder:text-brand-muted"
+                  className="w-full min-h-11 border border-[var(--color-border)] rounded-xl pl-10 pr-4 py-2.5 text-sm bg-surface text-brand-text focus:border-accent focus-ring transition-colors placeholder:text-brand-muted"
                 />
               </div>
             </div>
 
+            {mode !== 'reset' && (
             <div className="space-y-1.5">
               <div className="flex justify-between items-center">
                 <label htmlFor="password" className="text-sm font-semibold text-brand-text">
                   Password
                 </label>
                 {mode === 'sign-in' && (
-                  <a href="#" className="text-xs text-accent font-bold hover:underline">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMode('reset')
+                      setError(null)
+                      setInfo(null)
+                    }}
+                    className="min-h-11 px-1 rounded-md text-xs text-accent font-bold hover:underline cursor-pointer focus-ring"
+                  >
                     Forgot password?
-                  </a>
+                  </button>
                 )}
               </div>
               <div className="relative">
@@ -263,34 +309,38 @@ export default function LoginPage() {
                   placeholder="••••••••"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full border border-[var(--color-border)] rounded-xl pl-10 pr-11 py-2.5 text-sm bg-surface text-brand-text focus:ring-4 focus:ring-accent/5 focus:border-accent focus:outline-none transition-all placeholder:text-brand-muted font-mono"
+                  className="w-full min-h-11 border border-[var(--color-border)] rounded-xl pl-10 pr-12 py-2.5 text-sm bg-surface text-brand-text focus:border-accent focus-ring transition-colors placeholder:text-brand-muted font-mono"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword((v) => !v)}
                   aria-label={showPassword ? 'Hide password' : 'Show password'}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-brand-muted hover:text-brand-text cursor-pointer p-1"
+                  aria-pressed={showPassword}
+                  className="absolute right-1 top-1/2 -translate-y-1/2 size-11 flex items-center justify-center rounded-lg text-brand-muted hover:text-brand-text cursor-pointer focus-ring"
                 >
                   {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                 </button>
               </div>
             </div>
+            )}
 
             {mode === 'sign-up' && (
-              <label className="flex items-start gap-2.5 text-xs text-brand-muted leading-tight cursor-pointer select-none">
+              <label className="flex items-start gap-2.5 text-xs text-brand-muted leading-relaxed cursor-pointer select-none">
                 <input
                   type="checkbox"
                   checked={consentChecked}
                   onChange={(e) => setConsentChecked(e.target.checked)}
-                  className="mt-0.5 rounded border-[var(--color-border)] text-accent focus:ring-accent/20"
+                  className="mt-0.5 size-4 shrink-0 rounded border-[var(--color-border)] text-accent focus-ring"
                 />
                 <span>
                   I agree to the{' '}
-                  <a href="/privacy" target="_blank" rel="noopener noreferrer" className="text-accent underline font-bold">
+                  <a href="/privacy" target="_blank" rel="noopener noreferrer" className="text-accent underline font-bold focus-ring rounded-sm">
                     Privacy Policy
                   </a>{' '}
                   and{' '}
-                  <a href="#" className="text-accent underline font-bold">
+                  {/* This pointed at "#" while /terms already existed — the box
+                      asked people to agree to a document they couldn't open. */}
+                  <a href="/terms" target="_blank" rel="noopener noreferrer" className="text-accent underline font-bold focus-ring rounded-sm">
                     Terms of Service
                   </a>
                   .
@@ -299,12 +349,14 @@ export default function LoginPage() {
             )}
 
             {error && (
-              <p role="alert" className="text-xs md:text-sm text-[var(--color-rejected)] font-medium">
+              <p role="alert" className="text-xs md:text-sm text-[var(--color-error-text)] font-medium">
                 {error}
               </p>
             )}
+            {/* The confirm-your-email message is the whole outcome of signing
+                up, so it gets announced rather than just appearing. */}
             {info && (
-              <p className="text-xs md:text-sm text-[var(--color-offer)] font-medium">
+              <p role="status" className="text-xs md:text-sm text-[var(--color-success-text)] font-medium">
                 {info}
               </p>
             )}
@@ -312,9 +364,15 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={loading || (mode === 'sign-up' && !consentChecked)}
-              className="w-full py-3 px-4 bg-accent hover:bg-accent-hover text-white font-bold text-sm rounded-xl shadow-md hover:shadow-lg hover:shadow-accent/20 active:scale-[0.98] transition-all disabled:opacity-50 disabled:hover:shadow-none cursor-pointer"
+              className="w-full min-h-11 py-3 px-4 bg-accent hover:bg-accent-hover text-white font-bold text-sm rounded-xl shadow-md hover:shadow-lg hover:shadow-accent/20 active:scale-[0.98] transition-all disabled:opacity-50 disabled:hover:shadow-none disabled:cursor-not-allowed cursor-pointer focus-ring"
             >
-              {loading ? 'Please wait…' : mode === 'sign-in' ? 'Sign in' : 'Create account'}
+              {loading
+                ? 'Please wait…'
+                : mode === 'sign-in'
+                  ? 'Sign in'
+                  : mode === 'sign-up'
+                    ? 'Create account'
+                    : 'Send reset link'}
             </button>
           </form>
 
@@ -327,17 +385,22 @@ export default function LoginPage() {
                 setError(null)
                 setInfo(null)
               }}
-              className="text-xs md:text-sm text-brand-muted hover:text-brand-text transition-colors cursor-pointer"
+              className="min-h-11 px-2 text-xs md:text-sm text-brand-muted hover:text-brand-text transition-colors cursor-pointer focus-ring rounded-md"
             >
               {mode === 'sign-in' ? (
                 <>
                   Don&apos;t have an account?{' '}
                   <span className="text-accent font-bold hover:underline">Sign up</span>
                 </>
-              ) : (
+              ) : mode === 'sign-up' ? (
                 <>
                   Already have an account?{' '}
                   <span className="text-accent font-bold hover:underline">Sign in</span>
+                </>
+              ) : (
+                <>
+                  Remembered it?{' '}
+                  <span className="text-accent font-bold hover:underline">Back to sign in</span>
                 </>
               )}
             </button>
