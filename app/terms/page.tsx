@@ -84,14 +84,15 @@ export default async function TermsPage() {
             6. Contact Details
           </h2>
           <p className="text-sm text-brand-muted leading-relaxed">
-            For inquiries regarding terms compliance, account issues, or general service inquiries, please contact:
+            JobTrackr is built and maintained by a single developer. For questions about these
+            terms, account issues, or anything else, email me directly:
           </p>
           {/* Tinted panel, no border: this sits inside the page card already. */}
           <div className="bg-surface-muted rounded-xl p-4 text-sm font-mono text-brand-text space-y-1">
             <p>
               Email:{' '}
-              <a href="mailto:support@jobtrackr.com" className="text-accent hover:underline focus-ring rounded-sm">
-                support@jobtrackr.com
+              <a href="mailto:hafizfaruqi27@gmail.com" className="text-accent hover:underline focus-ring rounded-sm">
+                hafizfaruqi27@gmail.com
               </a>
             </p>
           </div>
