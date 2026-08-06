@@ -1,5 +1,5 @@
 import { redirect } from 'next/navigation'
-import { CheckCircle2, Circle, Laptop, History, ShieldAlert } from 'lucide-react'
+import { CheckCircle2, Circle, History } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 import { ProfileForm } from '@/components/profile/ProfileForm'
 import { DangerZone } from '@/components/profile/DangerZone'
@@ -22,20 +22,32 @@ export default async function ProfilePage() {
     .eq('id', user.id)
     .single<Profile>()
 
-  // Calculate profile strength
+  // Profile strength is the share of these three that are actually done.
+  // "Account verified" used to render a permanent green tick wired to nothing,
+  // and the bar started at 50% for a profile with neither name nor photo.
+  const isVerified = Boolean(user.email_confirmed_at ?? user.confirmed_at)
   const hasName = Boolean(profile?.full_name)
   const hasAvatar = Boolean(profile?.avatar_url)
-  let strengthPercent = 50
-  if (hasName && hasAvatar) strengthPercent = 100
-  else if (hasName || hasAvatar) strengthPercent = 75
+  const checklist = [
+    { label: 'Account verified', done: isVerified },
+    { label: 'Display name added', done: hasName },
+    { label: 'Profile photo uploaded', done: hasAvatar },
+  ]
+  const completed = checklist.filter((item) => item.done).length
+  const strengthPercent = Math.round((completed / checklist.length) * 100)
+  const strengthLabel =
+    strengthPercent === 100 ? 'Complete' : strengthPercent >= 67 ? 'Advanced' : 'Basic'
 
   return (
-    <div className="p-6 max-w-max-content-width mx-auto flex flex-col gap-6">
+    <div className="p-6 max-w-[var(--content-max)] mx-auto flex flex-col gap-6">
       {/* Page Header */}
-      <div className="flex items-center gap-2 text-brand-muted text-xs font-medium pb-4 border-b border-[var(--color-border)]">
-        <span>Account</span>
-        <span>&bull;</span>
-        <span className="text-accent font-semibold">Profile Settings</span>
+      <div className="pb-4 border-b border-[var(--color-border)] space-y-2">
+        <div className="flex items-center gap-2 text-brand-muted text-xs font-medium">
+          <span>Account</span>
+          <span>&bull;</span>
+          <span className="text-accent font-semibold">Profile Settings</span>
+        </div>
+        <h1 className="font-bold text-brand-text text-2xl md:text-3xl">Profile settings</h1>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
@@ -57,63 +69,56 @@ export default async function ProfilePage() {
         <div className="lg:col-span-4 flex flex-col gap-6">
           {/* Profile Strength */}
           <div className="bg-surface border border-[var(--color-border)] rounded-2xl p-6 shadow-card space-y-4 relative overflow-hidden">
-            <h4 className="font-bold text-brand-text text-base">Profile Strength</h4>
+            <h2 className="font-bold text-brand-text text-base">Profile Strength</h2>
             <div className="space-y-2">
-              <div className="w-full bg-surface-muted h-2 rounded-full overflow-hidden">
+              <div
+                className="w-full bg-surface-muted h-2 rounded-full overflow-hidden"
+                role="progressbar"
+                aria-valuenow={strengthPercent}
+                aria-valuemin={0}
+                aria-valuemax={100}
+                aria-label="Profile completeness"
+              >
+                {/* scaleX rather than width: animating width forces layout on
+                    every frame, and the parent already clips to the pill. */}
                 <div
-                  className="bg-accent h-full rounded-full transition-all duration-500"
-                  style={{ width: `${strengthPercent}%` }}
+                  className="bg-accent h-full w-full rounded-full origin-left transition-transform duration-500"
+                  style={{ transform: `scaleX(${strengthPercent / 100})` }}
                 ></div>
               </div>
               <div className="flex justify-between items-center text-xs">
-                <span className="font-semibold text-accent">
-                  {strengthPercent === 100 ? 'Complete' : strengthPercent === 75 ? 'Advanced' : 'Basic'}
-                </span>
+                <span className="font-semibold text-accent">{strengthLabel}</span>
                 <span className="text-brand-muted font-mono">{strengthPercent}% Complete</span>
               </div>
             </div>
 
             <ul className="space-y-3 pt-2">
-              <li className="flex items-center gap-2.5 text-xs md:text-sm text-brand-text">
-                <CheckCircle2 className="size-4.5 text-[var(--color-offer)] shrink-0" />
-                <span>Account verified</span>
-              </li>
-              <li className="flex items-center gap-2.5 text-xs md:text-sm text-brand-text">
-                {hasName ? (
-                  <CheckCircle2 className="size-4.5 text-[var(--color-offer)] shrink-0" />
-                ) : (
-                  <Circle className="size-4.5 text-brand-muted shrink-0" />
-                )}
-                <span className={hasName ? '' : 'text-brand-muted'}>Display name added</span>
-              </li>
-              <li className="flex items-center gap-2.5 text-xs md:text-sm text-brand-text">
-                {hasAvatar ? (
-                  <CheckCircle2 className="size-4.5 text-[var(--color-offer)] shrink-0" />
-                ) : (
-                  <Circle className="size-4.5 text-brand-muted shrink-0" />
-                )}
-                <span className={hasAvatar ? '' : 'text-brand-muted'}>Profile photo uploaded</span>
-              </li>
+              {checklist.map((item) => (
+                <li
+                  key={item.label}
+                  className="flex items-center gap-2.5 text-xs md:text-sm text-brand-text"
+                >
+                  {item.done ? (
+                    <CheckCircle2 className="size-4.5 text-[var(--color-offer)] shrink-0" aria-hidden="true" />
+                  ) : (
+                    <Circle className="size-4.5 text-brand-muted shrink-0" aria-hidden="true" />
+                  )}
+                  <span className={item.done ? '' : 'text-brand-muted'}>{item.label}</span>
+                  <span className="sr-only">{item.done ? '— done' : '— not done'}</span>
+                </li>
+              ))}
             </ul>
           </div>
 
-          {/* Recent Activity */}
+          {/* A "Logged in from Web App — Active now • Jakarta, ID" row used to
+              sit above this one. The app tracks no sessions, devices or
+              locations; the city was invented. Only the real event remains. */}
           <div className="bg-surface border border-[var(--color-border)] rounded-2xl p-6 shadow-card space-y-4">
-            <h4 className="font-bold text-brand-text text-base">Recent Activity</h4>
+            <h2 className="font-bold text-brand-text text-base">Account</h2>
             <div className="space-y-4 text-xs md:text-sm">
               <div className="flex items-start gap-3">
-                <div className="w-8 h-8 rounded-full bg-accent-light flex items-center justify-center text-accent shrink-0">
-                  <Laptop className="size-4" />
-                </div>
-                <div>
-                  <p className="font-semibold text-brand-text">Logged in from Web App</p>
-                  <p className="text-[10px] md:text-xs text-brand-muted mt-0.5">Active now &bull; Jakarta, ID</p>
-                </div>
-              </div>
-
-              <div className="flex items-start gap-3">
-                <div className="w-8 h-8 rounded-full bg-surface-muted flex items-center justify-center text-brand-muted shrink-0 border border-[var(--color-border)]">
-                  <History className="size-4" />
+                <div className="w-8 h-8 rounded-full bg-surface-muted flex items-center justify-center text-brand-muted shrink-0">
+                  <History className="size-4" aria-hidden="true" />
                 </div>
                 <div>
                   <p className="font-semibold text-brand-text">Account created</p>

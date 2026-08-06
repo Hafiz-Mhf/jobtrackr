@@ -3,17 +3,23 @@
 import { useEffect, useRef, useState } from 'react'
 import { motion } from 'framer-motion'
 import { useJobs } from '@/hooks/useJobs'
+import { usePrefersReducedMotion } from '@/hooks/usePrefersReducedMotion'
 import { getWeeklyStats } from '@/lib/stats'
 import { stagger, fadeUp } from '@/lib/animations'
 import { cn } from '@/lib/utils'
 import { StatsBarSkeleton } from '@/components/ui/Skeleton'
 
-function AnimatedNumber({ value }: { value: number }) {
+function pad(n: number) {
+  return n < 10 ? `0${n}` : `${n}`
+}
+
+// Only mounted when the count-up should actually run, so the effect never has
+// to setState synchronously just to fall back to the static figure.
+function CountUp({ value }: { value: number }) {
   const [display, setDisplay] = useState(0)
   const ref = useRef<number | null>(null)
 
   useEffect(() => {
-    if (value === 0) { setDisplay(0); return }
     const duration = 600
     const start = performance.now()
     function tick(now: number) {
@@ -27,12 +33,30 @@ function AnimatedNumber({ value }: { value: number }) {
     return () => { if (ref.current) cancelAnimationFrame(ref.current) }
   }, [value])
 
-  const formatted = display < 10 ? `0${display}` : `${display}`
-  return <>{formatted}</>
+  return <span aria-hidden="true">{pad(display)}</span>
+}
+
+function AnimatedNumber({ value, animate }: { value: number; animate: boolean }) {
+  // The count-up is driven by requestAnimationFrame, which the global
+  // reduced-motion CSS rule cannot touch — so it has to opt out in JS.
+  const shouldAnimate = animate && value !== 0
+
+  // Announce the real figure; the ticking digits in between are decoration.
+  return (
+    <>
+      <span className="sr-only">{pad(value)}</span>
+      {shouldAnimate ? (
+        <CountUp value={value} />
+      ) : (
+        <span aria-hidden="true">{pad(value)}</span>
+      )}
+    </>
+  )
 }
 
 export function StatsBar() {
   const { jobs, loading } = useJobs()
+  const reducedMotion = usePrefersReducedMotion()
   if (loading) return <StatsBarSkeleton />
 
   const stats = getWeeklyStats(jobs)
@@ -63,13 +87,13 @@ export function StatsBar() {
       value: stats.rejectedThisWeek,
       subtext: `${stats.rejectedThisWeek} this wk`,
       color: 'bg-[var(--color-rejected)]',
-      textColor: 'text-brand-muted',
+      textColor: 'text-[var(--color-rejected)]',
     },
   ]
 
   return (
     <motion.div
-      initial="hidden"
+      initial={reducedMotion ? false : 'hidden'}
       animate="visible"
       variants={stagger(0.08)}
       className="grid grid-cols-2 md:grid-cols-4 gap-3 px-6 pt-6"
@@ -88,7 +112,7 @@ export function StatsBar() {
           </div>
           <div className="flex items-baseline justify-between mt-1.5">
             <span className="text-lg md:text-xl font-bold text-brand-text">
-              <AnimatedNumber value={tile.value} />
+              <AnimatedNumber value={tile.value} animate={!reducedMotion} />
             </span>
             <span className={cn('font-mono text-[10px] font-semibold', tile.textColor)}>
               {tile.subtext}

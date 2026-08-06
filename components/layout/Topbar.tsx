@@ -26,13 +26,16 @@ export function Topbar({ profile, email }: Props) {
       <div className="flex items-center gap-3">
         <Link
           href="/jobs/new"
-          className="bg-accent text-white text-sm font-semibold px-4 py-1.5 rounded-md"
+          className="bg-accent hover:bg-accent-hover text-white text-sm font-semibold px-4 min-h-11 flex items-center rounded-md transition-colors focus-ring"
         >
           Add Job
         </Link>
 
         <Menu.Root>
-          <Menu.Trigger className="flex items-center gap-2 rounded-md px-2 py-1.5 text-sm font-medium text-brand-text hover:bg-surface-muted">
+          <Menu.Trigger
+            aria-label={`Account menu for ${displayName}`}
+            className="flex items-center gap-2 rounded-md px-2 min-h-11 text-sm font-medium text-brand-text hover:bg-surface-muted transition-colors focus-ring cursor-pointer"
+          >
             <Avatar.Root className="size-7 rounded-full overflow-hidden bg-accent-light flex items-center justify-center text-accent text-xs font-semibold">
               {profile?.avatar_url && (
                 <Avatar.Image src={profile.avatar_url} alt="" className="size-full object-cover" />
@@ -46,13 +49,15 @@ export function Topbar({ profile, email }: Props) {
               <Menu.Popup className="bg-surface border border-[var(--color-border)] rounded-md shadow-lg py-1 min-w-[160px]">
                 <Menu.LinkItem
                   render={<Link href="/profile" />}
-                  className="block px-3 py-2 text-sm text-brand-text hover:bg-surface-muted cursor-pointer"
+                  className="flex items-center px-3 min-h-11 text-sm text-brand-text hover:bg-surface-muted cursor-pointer focus-ring"
                 >
                   Profile
                 </Menu.LinkItem>
+                {/* --color-rejected is 3.67:1 as text and fails AA; the
+                    error-text step is the one tuned for copy. */}
                 <Menu.Item
                   onClick={handleLogout}
-                  className="block px-3 py-2 text-sm text-[var(--color-rejected)] hover:bg-surface-muted cursor-pointer"
+                  className="flex items-center px-3 min-h-11 text-sm text-[var(--color-error-text)] hover:bg-surface-muted cursor-pointer focus-ring"
                 >
                   Logout
                 </Menu.Item>

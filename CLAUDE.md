@@ -55,9 +55,15 @@ jobtrackr/
 ├── app/
 │   ├── (auth)/
 │   │   ├── login/
-│   │   │   └── page.tsx
+│   │   │   └── page.tsx            # Sign in / sign up / request reset link
+│   │   ├── update-password/
+│   │   │   └── page.tsx            # Set a new password (needs recovery session)
 │   │   └── callback/
-│   │       └── route.ts
+│   │       └── route.ts            # Code exchange; honours ?next= (same-origin only)
+│   ├── error.tsx                   # Route-level error boundary
+│   ├── global-error.tsx            # Root-layout failures (own html/body)
+│   ├── not-found.tsx               # 404
+│   ├── privacy/ terms/ support/    # Public legal + contact pages
 │   ├── (dashboard)/
 │   │   ├── layout.tsx              # Sidebar + topbar shell
 │   │   ├── dashboard/
@@ -82,15 +88,21 @@ jobtrackr/
 │   │   ├── JobForm.tsx             # Manual entry form
 │   │   ├── ParseInput.tsx          # JD paste → client-side parse
 │   │   ├── StatusBadge.tsx
-│   │   └── ReminderFlag.tsx
+│   │   ├── JobIcon.tsx             # Renders the icon for a job (see lib/job-icon.ts)
+│   │   └── ReminderFlag.tsx        # UNUSED — nothing imports it; delete candidate
 │   ├── prep/
 │   │   ├── PrepPanel.tsx           # Shows matched questions
 │   │   └── QuestionCard.tsx
+│   ├── profile/
+│   │   ├── ProfileForm.tsx         # Display name + avatar
+│   │   └── DangerZone.tsx          # Export data, delete account
 │   ├── layout/
 │   │   ├── Sidebar.tsx
 │   │   ├── Topbar.tsx
 │   │   └── MobileNav.tsx
 │   └── ui/                         # shadcn auto-generated components
+│       ├── ConfirmDialog.tsx       # Shared confirm for destructive actions
+│       └── Skeleton.tsx            # Per-page loading skeletons
 ├── lib/
 │   ├── supabase/
 │   │   ├── client.ts               # Browser client
@@ -106,7 +118,9 @@ jobtrackr/
 │   │   └── errors.ts               # Typed codes → human-readable copy
 │   ├── parser.ts                   # Client-side JD text parser (regex + heuristics)
 │   ├── interview-questions.ts      # Curated question bank keyed by tech tag
-│   ├── reminders.ts                # Stale job detection logic
+│   ├── reminders.ts                # Stale job detection + getStaleDays (shared clock)
+│   ├── job-icon.ts                 # Role/tags → icon kind (string, not a component)
+│   ├── validation.ts               # Shared field + avatar file validation
 │   └── utils.ts                    # cn(), formatDate(), etc.
 ├── types/
 │   └── index.ts                    # All shared TypeScript types
@@ -313,6 +327,56 @@ The form then shows an empty required field, which the user notices, rather than
 a plausible-looking wrong value, which they may not. Do not reintroduce sentinel
 strings.
 
+### Never render invented data
+
+The same principle applies to the whole UI, not just parsed fields. If a number,
+status, activity record or contact detail is not backed by real state, do not
+render it. A review pass removed all of these, each of which had shipped:
+
+- a "Weekly Goal" bar hardcoded to 60% against a target nothing tracked
+- a "Recent Activity" row reading "Active now • Jakarta, ID" for sessions the
+  app does not record — the city was invented
+- an "Account verified" checklist item wired to nothing, always ticked
+- an "Account Type: Professional" field, padlocked, for a tier that does not exist
+- a "Point of Contact — Recruitment Team" card on job detail
+- a support desk, company LinkedIn page, separate "DPO Office" and a 24-hour
+  response SLA, none of which exist
+
+Prefer showing less. Where a real figure exists, derive it (see the reminders
+"Where things stand" tile). Where one doesn't, omit the element.
+
+Related: **do not describe any feature as AI.** There is no model in this
+project. The login page shipped "Instant AI Parsing" directly above copy
+promising "no AI subscription required", and the add-job page claimed "Our AI
+will automatically extract...". Both are gone; do not reintroduce them.
+
+### Semantic colour tokens
+
+Status colours (`--color-rejected`, `--color-offer`, …) are tuned for dots,
+badges and borders. **They fail WCAG AA as body copy** — `--color-rejected` is
+3.67:1 and `--color-offer` is 2.38:1. Use the dedicated text steps instead:
+
+| Use as text | Token | Contrast on `--color-bg` |
+|---|---|---|
+| Errors, destructive labels | `--color-error-text` | 5.9:1 |
+| Warnings, stale badges | `--color-warning-text` on `--color-warning-bg` | 6.7:1 |
+| Success, confirmations | `--color-success-text` | 5.2:1 |
+
+Measure against `--color-bg` (`#F8F7FF`), **not white** — the page background is
+tinted, and the previous `#E11D48` cleared 4.5:1 on white while measuring 4.4:1
+where it actually rendered.
+
+### Accessibility baseline
+
+Every interactive element gets the `focus-ring` utility and a 44px minimum
+target. Do not use `focus:outline-none` with a low-opacity `ring-*`; it reads as
+no focus indicator at all. Each page has exactly one `h1` with no skipped
+levels — and check it survives at mobile widths, since a heading inside a
+`hidden lg:flex` panel disappears below the breakpoint. Never signal state by
+colour alone (see `MobileNav`, which pairs `aria-current` with a marker bar).
+Modals follow `ConfirmDialog`: focus moves in on open, Escape closes, Tab is
+trapped, focus returns to the opener.
+
 ### Interview Question Bank
 
 `lib/interview-questions.ts` exports a map of tech tags → curated questions. When a job detail page loads, it reads the job's `tags` and pulls matching questions. No async call, no API, instant.
@@ -441,6 +505,9 @@ npx tsc --noEmit
 # Lint
 npm run lint
 
+# Unit tests (vitest) — lib/ is covered; run these after touching anything there
+npx vitest run
+
 # Build
 npm run build
 
@@ -482,7 +549,14 @@ Full detail in `docs/superpowers/specs/2026-07-03-jobtrackr-mvp-design.md` (Secu
 - **`proxy.ts` re-validates the session on every `(dashboard)` request** (Next 16 renamed `middleware.ts` → `proxy.ts`, function `proxy`) — never gate routes with client-only checks.
 - **Email/password**: min 8 chars, Supabase leaked-password protection enabled, email verification required before dashboard access.
 - **Google OAuth**: PKCE flow, exact redirect-URL allowlist (no wildcards) in both Supabase and Google Cloud Console, scopes limited to `email` + `profile`.
-- **Generic auth error messages** — never reveal whether an email is registered.
+- **Generic auth error messages** — never reveal whether an email is registered. This includes the
+  password-reset confirmation, which says "if that email has an account…" rather than confirming one.
+- **`/callback` only redirects to same-origin paths.** The `next` parameter is validated in
+  `safeNext()`: it must start with `/` and must not start with `//`. Without that, a crafted callback
+  URL bounces a freshly authenticated user to an attacker's site.
+- **Keep the proxy's protected-prefix list in sync with the `(dashboard)` group.** `/profile` was
+  missing from it; the page's own server-side check meant it was never exposed, but the two lists
+  must not drift.
 - **RLS on `jobs`**: explicit `select`/`insert`/`update`/`delete` policies checking `auth.uid() = user_id`, not one blanket `for all` policy.
 - **Validate and cap all API input server-side** (`/api/jobs`) — string length limits, `status` restricted to the 5 known enum values — even though RLS also scopes rows.
 - **Never use `dangerouslySetInnerHTML`** on user-supplied text (JD paste, notes). Plain JSX interpolation only.
@@ -520,6 +594,11 @@ Constraints that are easy to break by accident:
 
 Follow-up reminders are **in-app only**. Logic:
 - A job is "stale" if `status = 'applied'` AND `applied_at` (falling back to `last_updated` if not set) is more than 7 days ago.
+- **Always read that date through `getStaleReference` / `getStaleDays` in `lib/reminders.ts`.** Never
+  compute a day count from `last_updated` directly. The reminders badge used to do exactly that
+  while `getStaleJobs` filtered on `applied_at`, so any unrelated edit to a row made a job that had
+  been silent for 45 days display "No update in 1 days". Regression tests cover this in
+  `__tests__/lib/reminders.test.ts`.
 - Surface stale jobs as a badge count (or status dot when sidebar is collapsed) in the sidebar and a dedicated `/reminders` page.
 - The check runs client-side on dashboard load — no cron job needed for MVP.
 
@@ -530,6 +609,7 @@ Follow-up reminders are **in-app only**. Logic:
 Build these. Nothing else until they work end-to-end.
 
 - [x] Auth (login / logout / Google OAuth)
+- [x] Password reset (request link → `/callback?next=` → `/update-password`)
 - [x] Add job via JD paste (client-side parse)
 - [x] Add job via posting URL (server fetch → JSON-LD / Open Graph / scoped text)
 - [x] Add job manually (fallback form)

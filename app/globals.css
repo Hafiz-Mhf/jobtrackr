@@ -24,6 +24,26 @@
   --color-offer:         #10B981;
   --color-rejected:      #F43F5E;
 
+  /* Error *text* only. --color-rejected is the Rejected status colour and is
+     tuned for dots, badges and borders, where 3.67:1 is fine; as body copy it
+     fails WCAG AA. Note the bar is the page background (#F8F7FF), not white:
+     the previous #E11D48 cleared 4.5:1 on white but measured 4.4:1 on the real
+     surface. This step clears it on both (5.9:1 on #F8F7FF, 6.3:1 on white),
+     and still gives white text 6.3:1 when used as a button fill. */
+  --color-error-text:    #BE123C;
+
+  /* Warning surface for the stale-reminder badge. The previous one-off
+     `bg-amber-500/10 text-amber-700` measured 4.66:1 — a pass with almost no
+     margin, and the only non-token colour pairing in the app. This pair
+     clears 6.6:1 in the same hue. */
+  --color-warning-text:  #92400E;
+  --color-warning-bg:    #FFF7ED;
+
+  /* Same split as the error pair: --color-offer is the Offer status colour and
+     measures 2.5:1 as text, which is nowhere near AA. This step is 5.2:1 on the
+     page background. */
+  --color-success-text:  #047857;
+
   --color-border:        #E8E6F5;
   --color-border-focus:  #5B4EE8;
   --color-shadow:        rgba(91, 78, 232, 0.08);
@@ -37,6 +57,10 @@
 
   --sidebar-width: 240px;
   --topbar-height: 60px;
+  /* Page-shell width, applied as `max-w-[var(--content-max)]`. Pages used to
+     say `max-w-max-content-width`, which silently produced no CSS — no token
+     backed it, and `max-w-max` is already a built-in utility — so every page
+     ran the full width of the window. */
   --content-max: 1200px;
   --background:            var(--color-bg);
   --foreground:            var(--color-text-primary);
@@ -154,6 +178,7 @@ body::before {
   --radius-2xl:            calc(var(--radius) * 1.8);
   --radius-3xl:            calc(var(--radius) * 2.2);
   --radius-4xl:            calc(var(--radius) * 2.6);
+
 }
 
 .dark {
@@ -252,6 +277,18 @@ body::before {
 
 @utility animate-float {
   animation: float 3s ease-in-out infinite;
+}
+
+/* Hides the scrollbar on strips that carry their own affordance — the stage
+   rail's chips already say what is off-screen. Never use this on a region whose
+   only overflow cue is the scrollbar itself. */
+@utility scrollbar-none {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
 }
 
 /* ── Focus-visible ring ── */

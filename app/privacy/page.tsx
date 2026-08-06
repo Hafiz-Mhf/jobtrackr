@@ -10,12 +10,18 @@ export default async function PrivacyPage() {
 
   return (
     <main className="min-h-screen bg-brand-bg px-4 py-12 flex items-center justify-center">
-      <div className="max-w-2xl w-full bg-surface border border-[var(--color-border)] rounded-2xl p-8 space-y-6 shadow-card">
+      {/* max-w-xl, not 2xl: at 2xl the prose ran ~87 characters per line, well
+          past comfortable reading width. */}
+      <div className="max-w-xl w-full bg-surface border border-[var(--color-border)] rounded-2xl p-8 space-y-6 shadow-card">
         <div className="pb-4 border-b border-[var(--color-border)]/60">
-          <Link href={backHref} className="text-sm font-semibold text-accent hover:underline">
+          <Link
+            href={backHref}
+            className="inline-flex items-center min-h-11 -ml-1 px-1 rounded-md text-sm font-semibold text-accent hover:underline focus-ring"
+          >
             {backText}
           </Link>
-          <h1 className="text-2xl font-bold text-brand-text mt-3">Privacy Policy (PDPA Compliant)</h1>
+          {/* "(PDPA Compliant)" read as a certification nobody issued. */}
+          <h1 className="text-2xl font-bold text-brand-text mt-3">Privacy Policy</h1>
           <p className="text-xs text-brand-muted mt-1 font-mono">Last updated: July 13, 2026</p>
         </div>
 
@@ -65,7 +71,7 @@ export default async function PrivacyPage() {
           <p className="text-sm text-brand-muted leading-relaxed">
             Under PDPA rules, you hold full rights to access, inspect, correct, or request portability
             of your personal data. You can perform all of these actions directly from your
-            <Link href="/profile" className="text-accent underline font-semibold mx-1">
+            <Link href="/profile" className="text-accent underline font-semibold mx-1 focus-ring rounded-sm">
               Settings Page
             </Link>
             at any time.
@@ -85,15 +91,23 @@ export default async function PrivacyPage() {
 
         <section className="space-y-2">
           <h2 className="text-sm font-bold text-brand-text uppercase tracking-wider font-mono">
-            6. Contacting the DPO
+            6. Contacting us
           </h2>
+          {/* JobTrackr is maintained by one person. There is no DPO office and
+              no support desk, so this no longer claims either. */}
           <p className="text-sm text-brand-muted leading-relaxed">
-            If you have questions regarding this Privacy Policy, compliance with the PDPA, or want to
-            lodge a data request, contact our Data Protection Officer (DPO) at:
+            JobTrackr is built and maintained by a single developer. For questions about this
+            policy, PDPA compliance, or to make a data request, email me directly — please put
+            &quot;PDPA&quot; in the subject line so it doesn&apos;t get lost.
           </p>
-          <div className="bg-surface-muted rounded-xl p-4 border border-[var(--color-border)] text-sm font-mono text-brand-text space-y-1">
-            <p>Email: <a href="mailto:dpo@jobtrackr.com" className="text-accent hover:underline">dpo@jobtrackr.com</a></p>
-            <p>Subject: PDPA Data Inquiry</p>
+          {/* Tinted panel, no border: this sits inside the page card already. */}
+          <div className="bg-surface-muted rounded-xl p-4 text-sm font-mono text-brand-text space-y-1">
+            <p>
+              Email:{' '}
+              <a href="mailto:hafizfaruqi27@gmail.com" className="text-accent hover:underline focus-ring rounded-sm">
+                hafizfaruqi27@gmail.com
+              </a>
+            </p>
           </div>
         </section>
       </div>

@@ -45,6 +45,7 @@ next-env.d.ts
 .impeccable/
 skills-lock.json
 .playwright-mcp/
+graphify-out/
 
 # docs (specs/plans) — local only, not tracked
 docs/

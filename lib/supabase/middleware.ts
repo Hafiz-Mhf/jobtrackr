@@ -25,9 +25,13 @@ export async function updateSession(request: NextRequest) {
 
   const { data: { user } } = await supabase.auth.getUser()
 
-  const isDashboardRoute = request.nextUrl.pathname.startsWith('/dashboard') ||
-    request.nextUrl.pathname.startsWith('/jobs') ||
-    request.nextUrl.pathname.startsWith('/reminders')
+  // Every route in the (dashboard) group. /profile was missing — its page does
+  // its own server-side check so it was never exposed, but the proxy is the
+  // documented gate and the two lists should not drift.
+  const PROTECTED_PREFIXES = ['/dashboard', '/jobs', '/reminders', '/profile']
+  const isDashboardRoute = PROTECTED_PREFIXES.some((prefix) =>
+    request.nextUrl.pathname.startsWith(prefix)
+  )
 
   if (isDashboardRoute && !user) {
     const url = request.nextUrl.clone()

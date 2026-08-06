@@ -1,26 +1,6 @@
 import Link from 'next/link'
-import { Mail, Globe, ArrowLeft } from 'lucide-react'
+import { Mail, ArrowLeft } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
-
-// Inline SVG Linkedin icon to avoid lucide-react package version issues
-function LinkedinIcon({ className }: { className?: string }) {
-  return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className={className}
-    >
-      <path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z" />
-      <rect width="4" height="12" x="2" y="9" />
-      <circle cx="4" cy="4" r="2" />
-    </svg>
-  )
-}
 
 export default async function SupportPage() {
   const supabase = await createClient()
@@ -35,78 +15,45 @@ export default async function SupportPage() {
         <div className="pb-4 border-b border-[var(--color-border)]/60">
           <Link
             href={backHref}
-            className="inline-flex items-center gap-1.5 text-sm font-semibold text-accent hover:underline"
+            className="inline-flex items-center gap-1.5 min-h-11 -ml-1 px-1 rounded-md text-sm font-semibold text-accent hover:underline focus-ring"
           >
-            <ArrowLeft className="size-4" />
+            <ArrowLeft className="size-4" aria-hidden="true" />
             {backText}
           </Link>
-          <h1 className="text-2xl font-bold text-brand-text mt-3">Help & Support</h1>
-          <p className="text-sm text-brand-muted mt-1">
-            Need assistance or have feedback? Reach out to our support channels below.
+          <h1 className="text-2xl font-bold text-brand-text mt-3">Help &amp; Support</h1>
+          <p className="text-sm text-brand-muted mt-1 max-w-[60ch]">
+            JobTrackr is built and maintained by one person. There&apos;s no support team — just me,
+            so the fastest route is email.
           </p>
         </div>
 
+        {/* This page used to list a support desk, a company LinkedIn page and a
+            separate "DPO Office", none of which exist, plus a 24-hour response
+            time nobody had committed to. One real address instead. */}
         <div className="space-y-4">
-          {/* Email Card */}
-          <div className="flex items-center gap-4 bg-surface-muted rounded-xl p-4 border border-[var(--color-border)] shadow-sm">
+          <div className="flex items-center gap-4 bg-surface-muted rounded-xl p-4">
             <div className="w-10 h-10 rounded-lg bg-accent-light flex items-center justify-center text-accent shrink-0">
-              <Mail className="size-5" />
+              <Mail className="size-5" aria-hidden="true" />
             </div>
             <div className="min-w-0">
               <p className="text-xs text-brand-muted font-bold uppercase tracking-wider font-mono">
-                Email Support
+                Email
               </p>
               <a
-                href="mailto:support@jobtrackr.com"
-                className="text-sm font-bold text-brand-text hover:text-accent hover:underline break-all"
+                href="mailto:hafizfaruqi27@gmail.com"
+                className="text-sm font-bold text-brand-text hover:text-accent hover:underline break-all focus-ring rounded-sm"
               >
-                support@jobtrackr.com
-              </a>
-            </div>
-          </div>
-
-          {/* LinkedIn Card */}
-          <div className="flex items-center gap-4 bg-surface-muted rounded-xl p-4 border border-[var(--color-border)] shadow-sm">
-            <div className="w-10 h-10 rounded-lg bg-accent-light flex items-center justify-center text-accent shrink-0">
-              <LinkedinIcon className="size-5" />
-            </div>
-            <div className="min-w-0">
-              <p className="text-xs text-brand-muted font-bold uppercase tracking-wider font-mono">
-                LinkedIn Profile
-              </p>
-              <a
-                href="https://linkedin.com/company/jobtrackr"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-sm font-bold text-brand-text hover:text-accent hover:underline break-all"
-              >
-                linkedin.com/company/jobtrackr
-              </a>
-            </div>
-          </div>
-
-          {/* DPO Card */}
-          <div className="flex items-center gap-4 bg-surface-muted rounded-xl p-4 border border-[var(--color-border)] shadow-sm">
-            <div className="w-10 h-10 rounded-lg bg-accent-light flex items-center justify-center text-accent shrink-0">
-              <Globe className="size-5" />
-            </div>
-            <div className="min-w-0">
-              <p className="text-xs text-brand-muted font-bold uppercase tracking-wider font-mono">
-                PDPA / DPO Office
-              </p>
-              <a
-                href="mailto:dpo@jobtrackr.com"
-                className="text-sm font-bold text-brand-text hover:text-accent hover:underline break-all"
-              >
-                dpo@jobtrackr.com
+                hafizfaruqi27@gmail.com
               </a>
             </div>
           </div>
         </div>
 
-        <div className="pt-2 text-center text-xs text-brand-muted font-mono leading-relaxed">
-          <p>Response times are typically within 24 hours.</p>
-          <p className="mt-1">For urgent security requests, please specify in the email subject line.</p>
+        <div className="pt-2 text-center text-xs text-brand-muted font-mono leading-relaxed max-w-[60ch] mx-auto">
+          <p>
+            This is a side project, so replies may take a few days. For privacy or data requests,
+            put &quot;PDPA&quot; in the subject line.
+          </p>
         </div>
       </div>
     </main>

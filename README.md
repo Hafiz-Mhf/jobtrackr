@@ -110,7 +110,8 @@ JobTrackr flags any applied job with **no status update after 7 days**:
 ### 👤 User Profile & Privacy
 - Edit your display name and upload an avatar
 - **Export all your data** as a JSON file (your data, always yours)
-- **Delete your account** with a single self-service action
+- **Delete your account** with a self-service action, gated behind a typed confirmation
+- **Reset a forgotten password** by email, with the recovery link landing on a dedicated screen
 
 ---
 
@@ -138,23 +139,28 @@ JobTrackr flags any applied job with **no status update after 7 days**:
 ```
 jobtrackr/
 ├── app/
-│   ├── (auth)/             # Login page & OAuth callback
+│   ├── (auth)/             # Login, password reset, OAuth callback
 │   ├── (dashboard)/        # Protected shell: sidebar + topbar
 │   │   ├── dashboard/      # Kanban board
 │   │   ├── jobs/           # Job list, new job form, job detail
-│   │   └── reminders/      # Stale application flags
+│   │   ├── reminders/      # Stale application flags
+│   │   └── profile/        # Account settings, export, deletion
+│   ├── privacy/ terms/ support/   # Public legal & contact pages
+│   ├── error.tsx           # Route error boundary (+ global-error, not-found)
 │   └── api/jobs/           # REST API: CRUD for jobs
 ├── components/
 │   ├── kanban/             # Board, Column, JobCard
-│   ├── jobs/               # JobForm, ParseInput, StatusBadge
+│   ├── jobs/               # JobForm, ParseInput, StatusBadge, JobIcon
 │   ├── prep/               # PrepPanel, QuestionCard
+│   ├── profile/            # ProfileForm, DangerZone
 │   ├── layout/             # Sidebar, Topbar, MobileNav
-│   └── ui/                 # shadcn auto-generated components
+│   └── ui/                 # shadcn components + ConfirmDialog, Skeleton
 ├── lib/
 │   ├── parser.ts           # Client-side JD text parser
 │   ├── extract/            # URL fetch → JSON-LD, Open Graph, content region
 │   ├── interview-questions.ts  # Curated question bank
-│   ├── reminders.ts        # Stale job detection logic
+│   ├── reminders.ts        # Stale job detection + shared day count
+│   ├── job-icon.ts         # Role/tags → icon kind
 │   └── supabase/           # Browser + server clients
 ├── contexts/               # JobsProvider, TagsProvider
 ├── hooks/                  # useJobs, useParser, useReminders
@@ -309,7 +315,7 @@ Open [http://localhost:3000](http://localhost:3000) and start tracking! 🎉
 npm run test
 ```
 
-Tests use [Vitest](https://vitest.dev) — 186 tests across 14 files, covering the client-side parser, the URL extraction pipeline (JSON-LD mapping, Open Graph, content-region isolation, HTML flattening, URL guards, rate limiting), reminder detection, stats, validation, and tag learning.
+Tests use [Vitest](https://vitest.dev) — 190 tests across 14 files, covering the client-side parser, the URL extraction pipeline (JSON-LD mapping, Open Graph, content-region isolation, HTML flattening, URL guards, rate limiting), reminder detection, stats, validation, and tag learning.
 
 The extraction tests are regression-driven: each one pins a failure seen against a real job posting, so the fixtures read like a list of ways job boards break naive scraping.
 

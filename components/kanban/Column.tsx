@@ -36,21 +36,33 @@ export function Column({ status, jobs }: Props) {
   const IconComponent = STATUS_ICONS[status]
 
   return (
-    <div
+    // A lane, not a card. The column used to carry its own border + surface +
+    // shadow, which put a card around every card — the one nesting the design
+    // system explicitly bans. Chrome now appears only while it is a drop target.
+    <section
       ref={setNodeRef}
       data-over={isOver || undefined}
+      aria-labelledby={`column-${status}`}
       className={cn(
-        'min-h-[500px] flex flex-col bg-surface-muted/50 border border-[var(--color-border)] rounded-2xl p-3 shadow-sm',
-        'transition-colors duration-150',
-        isOver && 'bg-accent-light/40 border-accent ring-2 ring-accent/25'
+        'min-h-[500px] flex flex-col rounded-2xl p-2',
+        'transition-colors duration-150 ring-1 ring-transparent',
+        isOver && 'bg-accent-light/40 ring-accent/40'
       )}
     >
-      <div className="flex items-center justify-between mb-3 text-[13px] font-bold text-brand-muted uppercase tracking-wider px-1">
-        <span className="flex items-center gap-1.5 text-brand-text">
-          <span className={`size-1.5 rounded-full ${accent.dot}`} aria-hidden="true" />
-          {STATUS_LABELS[status]}
-        </span>
-        <span className="bg-surface border border-[var(--color-border)] px-1.5 py-0.5 rounded-md font-mono text-[10px] text-brand-muted">
+      <div className="flex items-center justify-between gap-2 mb-3 px-1">
+        <h2
+          id={`column-${status}`}
+          className="flex items-center gap-1.5 min-w-0 text-[13px] font-bold text-brand-text uppercase tracking-wider"
+        >
+          <span className={`size-1.5 rounded-full shrink-0 ${accent.dot}`} aria-hidden="true" />
+          <span className="truncate">{STATUS_LABELS[status]}</span>
+          {/* The badge beside this heading is decorative; the count is announced here. */}
+          <span className="sr-only">, {jobs.length === 1 ? '1 job' : `${jobs.length} jobs`}</span>
+        </h2>
+        <span
+          aria-hidden="true"
+          className="shrink-0 bg-surface-muted px-2 py-1 rounded-md font-mono text-[10px] leading-none font-bold text-brand-muted"
+        >
           {jobs.length}
         </span>
       </div>
@@ -64,7 +76,7 @@ export function Column({ status, jobs }: Props) {
                 isOver && 'border-accent'
               )}
             >
-              <div className="size-8 rounded-lg bg-surface flex items-center justify-center border border-[var(--color-border)]/50 shadow-sm shrink-0">
+              <div className="size-8 rounded-lg bg-surface-muted flex items-center justify-center shrink-0">
                 <IconComponent className={`size-4 ${STATUS_ICON_COLOR[status]}`} />
               </div>
               <p className="text-[11px] text-brand-muted leading-normal px-2">
@@ -72,9 +84,10 @@ export function Column({ status, jobs }: Props) {
               </p>
               <Link
                 href={`/jobs/new?status=${status}`}
-                className="mt-1 inline-flex items-center gap-1 text-[10px] font-semibold text-accent hover:underline"
+                className="mt-1 inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[10px] font-semibold text-accent hover:underline focus-ring"
               >
                 + Add job
+                <span className="sr-only">to {STATUS_LABELS[status]}</span>
               </Link>
             </div>
           ) : (
@@ -82,6 +95,6 @@ export function Column({ status, jobs }: Props) {
           )}
         </div>
       </SortableContext>
-    </div>
+    </section>
   )
 }

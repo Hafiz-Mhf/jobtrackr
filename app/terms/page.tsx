@@ -10,9 +10,14 @@ export default async function TermsPage() {
 
   return (
     <main className="min-h-screen bg-brand-bg px-4 py-12 flex items-center justify-center">
-      <div className="max-w-2xl w-full bg-surface border border-[var(--color-border)] rounded-2xl p-8 space-y-6 shadow-card">
+      {/* max-w-xl, not 2xl: at 2xl the prose ran ~87 characters per line, well
+          past comfortable reading width. */}
+      <div className="max-w-xl w-full bg-surface border border-[var(--color-border)] rounded-2xl p-8 space-y-6 shadow-card">
         <div className="pb-4 border-b border-[var(--color-border)]/60">
-          <Link href={backHref} className="text-sm font-semibold text-accent hover:underline">
+          <Link
+            href={backHref}
+            className="inline-flex items-center min-h-11 -ml-1 px-1 rounded-md text-sm font-semibold text-accent hover:underline focus-ring"
+          >
             {backText}
           </Link>
           <h1 className="text-2xl font-bold text-brand-text mt-3">Terms of Service</h1>
@@ -79,10 +84,17 @@ export default async function TermsPage() {
             6. Contact Details
           </h2>
           <p className="text-sm text-brand-muted leading-relaxed">
-            For inquiries regarding terms compliance, account issues, or general service inquiries, please contact:
+            JobTrackr is built and maintained by a single developer. For questions about these
+            terms, account issues, or anything else, email me directly:
           </p>
-          <div className="bg-surface-muted rounded-xl p-4 border border-[var(--color-border)] text-sm font-mono text-brand-text space-y-1">
-            <p>Email: <a href="mailto:support@jobtrackr.com" className="text-accent hover:underline">support@jobtrackr.com</a></p>
+          {/* Tinted panel, no border: this sits inside the page card already. */}
+          <div className="bg-surface-muted rounded-xl p-4 text-sm font-mono text-brand-text space-y-1">
+            <p>
+              Email:{' '}
+              <a href="mailto:hafizfaruqi27@gmail.com" className="text-accent hover:underline focus-ring rounded-sm">
+                hafizfaruqi27@gmail.com
+              </a>
+            </p>
           </div>
         </section>
       </div>
