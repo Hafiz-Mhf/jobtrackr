@@ -1,24 +1,23 @@
 'use client'
 
-import { useState } from 'react'
-import { motion } from 'framer-motion'
 import { toast } from 'sonner'
 import { Sparkles, ChevronRight, FileText, Loader2 } from 'lucide-react'
 import { useParser, type ParsedJobWithUrl } from '@/hooks/useParser'
 import { useTags } from '@/contexts/TagsProvider'
 import { isSingleUrl } from '@/lib/url'
 import { EXTRACT_ERROR_MESSAGES } from '@/lib/extract/errors'
-import { stagger, fadeUp } from '@/lib/animations'
 import type { ParsedJob } from '@/types'
 
 interface Props {
+  /** Owned by the parent so switching to the review form can't discard it. */
+  text: string
+  onTextChange: (text: string) => void
   onParsed: (parsed: ParsedJobWithUrl) => void
   onManual: () => void
 }
 
-export function ParseInput({ onParsed, onManual }: Props) {
-  const [text, setText] = useState('')
-  const { result, loading, parse, parseFromUrl } = useParser()
+export function ParseInput({ text, onTextChange, onParsed, onManual }: Props) {
+  const { loading, parse, parseFromUrl } = useParser()
   const { customTags } = useTags()
 
   function reportFieldsFound(parsed: ParsedJob) {
@@ -71,17 +70,8 @@ export function ParseInput({ onParsed, onManual }: Props) {
     }
   }
 
-  const fields = result
-    ? [
-        result.company,
-        result.role,
-        [result.salary_range, result.location].filter(Boolean).join(' · '),
-        result.tags.join(', '),
-      ].filter(Boolean)
-    : []
-
   return (
-    <div className="bg-surface border border-[var(--color-border)] rounded-2xl p-6 md:p-8 space-y-6 shadow-card transition-all duration-300 hover:shadow-lg">
+    <div className="bg-surface border border-[var(--color-border)] rounded-2xl p-6 md:p-8 space-y-6 shadow-card">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
         <label className="font-semibold text-brand-text flex items-center gap-2 text-sm md:text-base" htmlFor="jd-input">
           <FileText className="size-4 text-accent" />
@@ -96,17 +86,18 @@ export function ParseInput({ onParsed, onManual }: Props) {
         <textarea
           id="jd-input"
           value={text}
-          onChange={(e) => setText(e.target.value)}
+          onChange={(e) => onTextChange(e.target.value)}
           placeholder="Paste the job description text or link here... More text means better automatic extraction."
-          className="w-full min-h-[320px] p-6 bg-surface border border-[var(--color-border)] rounded-xl focus:ring-4 focus:ring-accent/5 focus:border-accent focus:outline-none transition-all duration-300 resize-none font-sans text-sm leading-relaxed text-brand-text placeholder:text-text-muted"
+          className="w-full min-h-[320px] p-6 bg-surface border border-[var(--color-border)] rounded-xl focus:border-accent focus-ring transition-colors resize-none font-sans text-sm leading-relaxed text-brand-text placeholder:text-text-muted"
         />
       </div>
 
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-2">
+      {/* Primary action first, so the mobile column order matches priority. */}
+      <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-2">
         <button
           type="button"
           onClick={onManual}
-          className="text-accent font-semibold text-sm hover:underline flex items-center gap-1 group w-full sm:w-auto"
+          className="rounded-xl px-3 py-3 text-accent font-semibold text-sm hover:underline hover:bg-accent-light/50 transition-colors flex items-center justify-center sm:justify-start gap-1 group focus-ring cursor-pointer"
         >
           Fill details manually
           <ChevronRight className="size-4 group-hover:translate-x-1 transition-transform" />
@@ -116,27 +107,12 @@ export function ParseInput({ onParsed, onManual }: Props) {
           type="button"
           onClick={handleExtract}
           disabled={!text.trim() || loading}
-          className="w-full sm:w-auto px-6 py-3.5 bg-accent text-white font-semibold text-sm rounded-xl hover:bg-accent-hover disabled:opacity-50 transition-all active:scale-[0.98] shadow-md flex items-center justify-center gap-2"
+          className="w-full sm:w-auto px-6 py-3.5 bg-accent text-white font-semibold text-sm rounded-xl hover:bg-accent-hover disabled:bg-surface-muted disabled:text-brand-muted disabled:shadow-none transition-all active:scale-[0.98] shadow-md flex items-center justify-center gap-2 focus-ring cursor-pointer disabled:cursor-not-allowed"
         >
           {loading ? <Loader2 className="size-4 animate-spin" /> : <Sparkles className="size-4" />}
           {loading ? 'Reading link…' : 'Extract Job Details'}
         </button>
       </div>
-
-      {result && (
-        <motion.div initial="hidden" animate="visible" variants={stagger()} className="mt-6 border-t border-[var(--color-border)] pt-4 space-y-1">
-          {fields.length === 0 && (
-            <p className="text-sm text-[var(--color-saved)]">
-              Couldn&apos;t extract details. Fill in the fields manually below.
-            </p>
-          )}
-          {fields.map((field, i) => (
-            <motion.p key={i} variants={fadeUp} className="text-sm">
-              ✓ {field}
-            </motion.p>
-          ))}
-        </motion.div>
-      )}
     </div>
   )
 }
