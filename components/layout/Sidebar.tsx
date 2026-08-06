@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useSyncExternalStore } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { LayoutGrid, List, Plus, Bell, PanelLeftClose, PanelLeftOpen, LogOut, Settings, Briefcase } from 'lucide-react'
@@ -19,21 +19,45 @@ const NAV_ITEMS = [
 
 const STORAGE_KEY = 'jobtrackr:sidebar-collapsed'
 
+// localStorage is an external store, so read it as one. Setting state from an
+// effect on mount worked but is a cascading render; useSyncExternalStore gets
+// the same no-hydration-mismatch result by rendering the server snapshot first
+// and swapping to the real value during hydration.
+const collapsedListeners = new Set<() => void>()
+
+function subscribeCollapsed(onChange: () => void) {
+  collapsedListeners.add(onChange)
+  // Keep multiple tabs in step.
+  window.addEventListener('storage', onChange)
+  return () => {
+    collapsedListeners.delete(onChange)
+    window.removeEventListener('storage', onChange)
+  }
+}
+
+function getCollapsedSnapshot() {
+  return localStorage.getItem(STORAGE_KEY) === 'true'
+}
+
+function getCollapsedServerSnapshot() {
+  return false
+}
+
+function setCollapsed(next: boolean) {
+  localStorage.setItem(STORAGE_KEY, String(next))
+  collapsedListeners.forEach((listener) => listener())
+}
+
 export function Sidebar({ reminderCount }: Props) {
   const pathname = usePathname()
-  const [collapsed, setCollapsed] = useState(false)
-
-  // Read persisted state after mount to avoid SSR/CSR hydration mismatch.
-  useEffect(() => {
-    setCollapsed(localStorage.getItem(STORAGE_KEY) === 'true')
-  }, [])
+  const collapsed = useSyncExternalStore(
+    subscribeCollapsed,
+    getCollapsedSnapshot,
+    getCollapsedServerSnapshot
+  )
 
   function toggle() {
-    setCollapsed((c) => {
-      const next = !c
-      localStorage.setItem(STORAGE_KEY, String(next))
-      return next
-    })
+    setCollapsed(!collapsed)
   }
 
   async function handleLogout() {
@@ -44,7 +68,7 @@ export function Sidebar({ reminderCount }: Props) {
 
   const linkClass = (active: boolean) =>
     cn(
-      'flex items-center gap-3 py-2.5 text-sm font-medium text-brand-muted hover:bg-accent-light hover:text-accent rounded-xl transition-all',
+      'flex items-center gap-3 py-2.5 text-sm font-medium text-brand-muted hover:bg-accent-light hover:text-accent rounded-xl transition-all focus-ring',
       collapsed ? 'justify-center px-2' : 'px-4',
       active && 'bg-accent-light/60 text-accent font-bold'
     )
@@ -65,7 +89,8 @@ export function Sidebar({ reminderCount }: Props) {
             </div>
             {!collapsed && (
               <div>
-                <h1 className="font-bold text-[15px] text-brand-text leading-none">JobTrackr</h1>
+                {/* Wordmark, not a page heading — each page owns its own h1. */}
+                <p className="font-bold text-[15px] text-brand-text leading-none">JobTrackr</p>
                 <p className="text-[9px] uppercase tracking-wider text-brand-muted font-bold mt-0.5">
                   Career Manager
                 </p>
@@ -77,7 +102,7 @@ export function Sidebar({ reminderCount }: Props) {
               type="button"
               onClick={toggle}
               aria-label="Collapse sidebar"
-              className="text-brand-muted hover:text-accent hover:bg-accent-light rounded-md p-1 transition-colors"
+              className="text-brand-muted hover:text-accent hover:bg-accent-light rounded-md p-1 transition-colors focus-ring cursor-pointer"
             >
               <PanelLeftClose size={16} />
             </button>
@@ -91,7 +116,7 @@ export function Sidebar({ reminderCount }: Props) {
               type="button"
               onClick={toggle}
               aria-label="Expand sidebar"
-              className="text-brand-muted hover:text-accent hover:bg-accent-light rounded-md p-1 transition-colors"
+              className="text-brand-muted hover:text-accent hover:bg-accent-light rounded-md p-1 transition-colors focus-ring cursor-pointer"
             >
               <PanelLeftOpen size={16} />
             </button>
@@ -138,7 +163,7 @@ export function Sidebar({ reminderCount }: Props) {
           <div className="px-4">
             <Link
               href="/jobs/new"
-              className="w-full py-2.5 bg-accent hover:bg-accent-hover text-white rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 shadow-md hover:shadow-lg hover:shadow-accent/15 active:scale-[0.98] transition-all"
+              className="w-full py-2.5 bg-accent hover:bg-accent-hover text-white rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 shadow-md hover:shadow-lg hover:shadow-accent/15 active:scale-[0.98] transition-all focus-ring"
             >
               <Plus className="size-4" />
               New Application
@@ -162,7 +187,7 @@ export function Sidebar({ reminderCount }: Props) {
             onClick={handleLogout}
             title={collapsed ? 'Logout' : undefined}
             className={cn(
-              'w-full flex items-center gap-3 py-2.5 text-sm font-medium text-[var(--color-rejected)] hover:bg-[var(--color-rejected)]/5 hover:text-[var(--color-rejected)] rounded-xl transition-all cursor-pointer',
+              'w-full flex items-center gap-3 py-2.5 text-sm font-medium text-[var(--color-rejected)] hover:bg-[var(--color-rejected)]/5 hover:text-[var(--color-rejected)] rounded-xl transition-all cursor-pointer focus-ring',
               collapsed ? 'justify-center px-2' : 'px-4'
             )}
           >
