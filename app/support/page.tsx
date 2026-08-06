@@ -35,9 +35,9 @@ export default async function SupportPage() {
         <div className="pb-4 border-b border-[var(--color-border)]/60">
           <Link
             href={backHref}
-            className="inline-flex items-center gap-1.5 text-sm font-semibold text-accent hover:underline"
+            className="inline-flex items-center gap-1.5 min-h-11 -ml-1 px-1 rounded-md text-sm font-semibold text-accent hover:underline focus-ring"
           >
-            <ArrowLeft className="size-4" />
+            <ArrowLeft className="size-4" aria-hidden="true" />
             {backText}
           </Link>
           <h1 className="text-2xl font-bold text-brand-text mt-3">Help & Support</h1>
@@ -48,7 +48,7 @@ export default async function SupportPage() {
 
         <div className="space-y-4">
           {/* Email Card */}
-          <div className="flex items-center gap-4 bg-surface-muted rounded-xl p-4 border border-[var(--color-border)] shadow-sm">
+          <div className="flex items-center gap-4 bg-surface-muted rounded-xl p-4">
             <div className="w-10 h-10 rounded-lg bg-accent-light flex items-center justify-center text-accent shrink-0">
               <Mail className="size-5" />
             </div>
@@ -58,7 +58,7 @@ export default async function SupportPage() {
               </p>
               <a
                 href="mailto:support@jobtrackr.com"
-                className="text-sm font-bold text-brand-text hover:text-accent hover:underline break-all"
+                className="text-sm font-bold text-brand-text hover:text-accent hover:underline break-all focus-ring rounded-sm"
               >
                 support@jobtrackr.com
               </a>
@@ -66,7 +66,7 @@ export default async function SupportPage() {
           </div>
 
           {/* LinkedIn Card */}
-          <div className="flex items-center gap-4 bg-surface-muted rounded-xl p-4 border border-[var(--color-border)] shadow-sm">
+          <div className="flex items-center gap-4 bg-surface-muted rounded-xl p-4">
             <div className="w-10 h-10 rounded-lg bg-accent-light flex items-center justify-center text-accent shrink-0">
               <LinkedinIcon className="size-5" />
             </div>
@@ -78,7 +78,7 @@ export default async function SupportPage() {
                 href="https://linkedin.com/company/jobtrackr"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-sm font-bold text-brand-text hover:text-accent hover:underline break-all"
+                className="text-sm font-bold text-brand-text hover:text-accent hover:underline break-all focus-ring rounded-sm"
               >
                 linkedin.com/company/jobtrackr
               </a>
@@ -86,7 +86,7 @@ export default async function SupportPage() {
           </div>
 
           {/* DPO Card */}
-          <div className="flex items-center gap-4 bg-surface-muted rounded-xl p-4 border border-[var(--color-border)] shadow-sm">
+          <div className="flex items-center gap-4 bg-surface-muted rounded-xl p-4">
             <div className="w-10 h-10 rounded-lg bg-accent-light flex items-center justify-center text-accent shrink-0">
               <Globe className="size-5" />
             </div>
@@ -96,7 +96,7 @@ export default async function SupportPage() {
               </p>
               <a
                 href="mailto:dpo@jobtrackr.com"
-                className="text-sm font-bold text-brand-text hover:text-accent hover:underline break-all"
+                className="text-sm font-bold text-brand-text hover:text-accent hover:underline break-all focus-ring rounded-sm"
               >
                 dpo@jobtrackr.com
               </a>
