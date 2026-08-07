@@ -39,6 +39,9 @@ const Toaster = ({ ...props }: ToasterProps) => {
       toastOptions={{
         classNames: {
           toast: "cn-toast",
+          // Sonner's default action button is 24px tall. Undo on a status move
+          // is a real target on a real deadline, and the app's baseline is 44px.
+          actionButton: "min-h-11 px-3 focus-ring",
         },
       }}
       {...props}

@@ -79,16 +79,16 @@ export function StatsBarSkeleton() {
       {Array.from({ length: 4 }).map((_, i) => (
         <div
           key={i}
-          className="bg-surface border border-[var(--color-border)] rounded-xl px-4 py-3 space-y-2"
+          className="bg-surface border border-[var(--color-border)] rounded-xl px-4 py-3"
         >
+          {/* Mirrors StatsBar's tile box model exactly — label line box, then
+              mt-1.5, then the 24px figure — so the row doesn't jump 2px when
+              the real numbers replace it. */}
           <div className="flex items-center gap-1.5">
             <Skeleton className="size-1.5 rounded-full" />
-            <Skeleton className="h-3 w-16" />
+            <Skeleton className="h-4 w-24" />
           </div>
-          <div className="flex items-baseline justify-between">
-            <Skeleton className="h-6 w-8" />
-            <Skeleton className="h-3 w-14" />
-          </div>
+          <Skeleton className="h-6 w-8 mt-1.5" />
         </div>
       ))}
     </div>

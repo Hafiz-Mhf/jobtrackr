@@ -66,47 +66,111 @@ const KEYBOARD_CODES: KeyboardCodes = {
  * Five columns off the right edge with nothing but a sliver of the next one is
  * invisible on a phone — this names every stage, carries its count, and jumps
  * to it. It doubles as the "there is more board over here" signal.
+ *
+ * Five chips need ~536px and a phone gives 375, so the rail overflows too. It
+ * carries `scrollbar-none`, which means without the edge fades below its own
+ * last chip would sit off-screen with no cue at all — the exact failure it was
+ * built to fix for the board. The active chip is also kept in view, since the
+ * highlight is worthless on a chip the user cannot see.
  */
 function StageRail({
   jobs,
   activeStage,
   onSelect,
+  reducedMotion,
 }: {
   jobs: Job[]
   activeStage: JobStatus
   onSelect: (status: JobStatus) => void
+  reducedMotion: boolean
 }) {
+  const railRef = useRef<HTMLElement>(null)
+  const chipRefs = useRef(new Map<JobStatus, HTMLButtonElement>())
+  const [edges, setEdges] = useState({ start: false, end: false })
+
+  const syncEdges = useCallback(() => {
+    const el = railRef.current
+    if (!el) return
+    setEdges({
+      start: el.scrollLeft > 4,
+      end: el.scrollLeft + el.clientWidth < el.scrollWidth - 4,
+    })
+  }, [])
+
+  useEffect(() => {
+    syncEdges()
+    window.addEventListener('resize', syncEdges)
+    return () => window.removeEventListener('resize', syncEdges)
+  }, [syncEdges, jobs.length])
+
+  useEffect(() => {
+    const el = railRef.current
+    const chip = chipRefs.current.get(activeStage)
+    if (!el || !chip) return
+    // scrollTo on the rail itself, not scrollIntoView: the rail sits inside the
+    // vertically-scrolling <main>, and scrollIntoView would drag the page with it.
+    el.scrollTo({
+      left: Math.max(0, chip.offsetLeft - 24), // 24px keeps the px-6 gutter
+      behavior: reducedMotion ? 'auto' : 'smooth',
+    })
+  }, [activeStage, reducedMotion])
+
   return (
-    <nav
-      aria-label="Jump to pipeline stage"
-      className="flex gap-1.5 overflow-x-auto scrollbar-none px-6 pt-4 xl:hidden"
-    >
-      {JOB_STATUSES.map((status) => {
-        const count = jobs.filter((j) => j.status === status).length
-        const active = status === activeStage
-        return (
-          <button
-            key={status}
-            type="button"
-            onClick={() => onSelect(status)}
-            aria-current={active ? 'true' : undefined}
-            className={cn(
-              'shrink-0 inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-[11px] font-semibold transition-colors focus-ring',
-              active
-                ? 'bg-accent-light border-accent/40 text-accent'
-                : 'bg-surface border-[var(--color-border)] text-brand-muted hover:text-brand-text'
-            )}
-          >
-            <span
-              className={cn('size-1.5 rounded-full', STATUS_ACCENT[status].dot)}
-              aria-hidden="true"
-            />
-            {STATUS_LABELS[status]}
-            <span className="font-mono font-bold opacity-70">{count}</span>
-          </button>
-        )
-      })}
-    </nav>
+    <div className="relative xl:hidden">
+      <nav
+        ref={railRef}
+        onScroll={syncEdges}
+        aria-label="Jump to pipeline stage"
+        className="flex gap-1.5 overflow-x-auto scrollbar-none px-6 pt-4"
+      >
+        {JOB_STATUSES.map((status) => {
+          const count = jobs.filter((j) => j.status === status).length
+          const active = status === activeStage
+          return (
+            <button
+              key={status}
+              type="button"
+              ref={(el) => {
+                if (el) chipRefs.current.set(status, el)
+                else chipRefs.current.delete(status)
+              }}
+              onClick={() => onSelect(status)}
+              aria-current={active ? 'true' : undefined}
+              className={cn(
+                'shrink-0 inline-flex min-h-11 items-center gap-1.5 rounded-lg border px-3 text-[11px] font-semibold transition-colors focus-ring',
+                active
+                  ? 'bg-accent-light border-accent/40 text-accent'
+                  : 'bg-surface border-[var(--color-border)] text-brand-muted hover:text-brand-text'
+              )}
+            >
+              <span
+                className={cn('size-1.5 rounded-full', STATUS_ACCENT[status].dot)}
+                aria-hidden="true"
+              />
+              {STATUS_LABELS[status]}
+              <span className="font-mono font-bold opacity-70">{count}</span>
+            </button>
+          )
+        })}
+      </nav>
+
+      {/* Same fade vocabulary as the board below, so "there is more this way"
+          looks identical wherever it appears. */}
+      <div
+        aria-hidden="true"
+        className={cn(
+          'pointer-events-none absolute inset-y-0 left-0 w-8 bg-gradient-to-r from-[var(--color-bg)] to-transparent transition-opacity duration-200',
+          edges.start ? 'opacity-100' : 'opacity-0'
+        )}
+      />
+      <div
+        aria-hidden="true"
+        className={cn(
+          'pointer-events-none absolute inset-y-0 right-0 w-8 bg-gradient-to-l from-[var(--color-bg)] to-transparent transition-opacity duration-200',
+          edges.end ? 'opacity-100' : 'opacity-0'
+        )}
+      />
+    </div>
   )
 }
 
@@ -259,9 +323,21 @@ export function Board() {
         onDragEnd={handleDragEnd}
         onDragCancel={() => setActiveId(null)}
       >
-        <StageRail jobs={jobs} activeStage={activeStage} onSelect={goToStage} />
+        <StageRail
+          jobs={jobs}
+          activeStage={activeStage}
+          onSelect={goToStage}
+          reducedMotion={reducedMotion}
+        />
 
-        <div className="relative">
+        {/* overflow-hidden contains the scroller's overflow *contribution*, not
+            just its paint. Without it <main> (flex-1 overflow-y-auto, so
+            overflow-x computes to auto) inherited the board's content width and
+            became a second horizontal scroller: 669px of blank page at 390px
+            wide, on the same axis as the board's own swipe. Setting
+            overflow-x:hidden on <main> only hides the scrollbar — the overflow
+            is still there. It has to be contained here. */}
+        <div className="relative overflow-hidden">
           <motion.div
             ref={scrollerRef}
             onScroll={syncScrollState}

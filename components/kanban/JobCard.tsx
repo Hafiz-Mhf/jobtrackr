@@ -1,7 +1,9 @@
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
+import { AlertTriangle } from 'lucide-react'
 import Link from 'next/link'
 import type { Job, JobStatus } from '@/types'
+import { getStaleDays, isStale } from '@/lib/reminders'
 import { formatDate } from '@/lib/utils'
 import { cn } from '@/lib/utils'
 import { JobIcon } from '@/components/jobs/JobIcon'
@@ -22,6 +24,29 @@ const STATUS_ICON_COLOR: Record<JobStatus, string> = {
 
 const CARD_BASE =
   'relative overflow-hidden bg-surface border border-[var(--color-border)] rounded-2xl p-3 shadow-card select-none'
+
+/**
+ * The board's only attention signal. `isStale` also drives the sidebar badge
+ * and the /reminders page; without this the board rendered a job silent for 46
+ * days identically to one applied yesterday, so the count next to the bell had
+ * no answer anywhere on the screen the user actually works in.
+ *
+ * Same predicate, same wording as /reminders, so the two can never disagree.
+ * The state is carried by the words — colour and icon only reinforce it.
+ */
+function StaleFlag({ job }: { job: Job }) {
+  if (!isStale(job)) return null
+  const days = getStaleDays(job)
+
+  return (
+    <div className="mt-2 flex items-center gap-1.5 rounded-md bg-[var(--color-warning-bg)] px-1.5 py-1 text-[10px] font-semibold text-[var(--color-warning-text)]">
+      <AlertTriangle className="size-3 shrink-0" aria-hidden="true" />
+      <span className="truncate">
+        No update in {days} day{days === 1 ? '' : 's'}
+      </span>
+    </div>
+  )
+}
 
 function CardBody({ job }: { job: Job }) {
   return (
@@ -60,6 +85,8 @@ function CardBody({ job }: { job: Job }) {
           </div>
         )}
       </div>
+
+      <StaleFlag job={job} />
     </>
   )
 }

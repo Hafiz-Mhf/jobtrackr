@@ -29,6 +29,22 @@ export const STATUS_ACCENT: Record<JobStatus, { border: string; dot: string }> =
 }
 
 export const STALE_DAYS = 7
+
+/**
+ * How long a job may sit in each stage before it counts as needing a follow-up.
+ *
+ * A status absent from this map never goes stale: `saved` is a bookmark with
+ * nobody on the other side of it, and `rejected` is terminal.
+ *
+ * `interview` runs longer than `applied` because scheduling genuinely takes a
+ * week or two and chasing at day 8 reads as impatient. `offer` is short —
+ * an open offer is the most time-sensitive thing on the board.
+ */
+export const STALE_THRESHOLDS: Partial<Record<JobStatus, number>> = {
+  applied: STALE_DAYS,
+  interview: 14,
+  offer: 7,
+}
 export const MAX_NAME_LENGTH = 100
 export const MAX_FIELD_LENGTH = 200
 export const MAX_TEXT_LENGTH = 10000

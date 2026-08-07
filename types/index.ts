@@ -16,6 +16,13 @@ export interface Job {
   tags: string[]
   notes?: string
   applied_at?: string
+  /**
+   * When the job last entered its current stage. Server-owned — stamped by the
+   * PATCH route on a real status change, never accepted from the request body.
+   * This is the follow-up clock for every stage except `applied`, which counts
+   * from `applied_at`. See getStaleReference in lib/reminders.ts.
+   */
+  status_changed_at: string
   last_updated: string
   created_at: string
 }

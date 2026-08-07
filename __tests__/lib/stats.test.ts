@@ -5,7 +5,8 @@ import type { Job } from '@/types'
 function job(overrides: Partial<Job>): Job {
   return {
     id: '1', user_id: 'u', company: 'C', role: 'R', status: 'saved',
-    tags: [], last_updated: '2026-07-07T00:00:00Z', created_at: '2026-01-01T00:00:00Z',
+    tags: [], last_updated: '2026-07-07T00:00:00Z', status_changed_at: '2026-07-07T00:00:00Z',
+    created_at: '2026-01-01T00:00:00Z',
     ...overrides,
   }
 }

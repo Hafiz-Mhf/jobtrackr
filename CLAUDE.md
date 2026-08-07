@@ -175,6 +175,7 @@ create table public.jobs (
   tags             text[] not null default '{}',
   notes            text,
   applied_at       timestamptz,
+  status_changed_at timestamptz not null default now(),  -- when the job entered its current stage
   last_updated     timestamptz not null default now(),
   created_at       timestamptz not null default now()
 );
@@ -230,6 +231,7 @@ export interface Job {
   tags: string[]
   notes?: string
   applied_at?: string
+  status_changed_at: string   // server-owned; set only on a real status change
   last_updated: string
   created_at: string
 }
@@ -593,12 +595,32 @@ Constraints that are easy to break by accident:
 ### Reminder Feature Implementation
 
 Follow-up reminders are **in-app only**. Logic:
-- A job is "stale" if `status = 'applied'` AND `applied_at` (falling back to `last_updated` if not set) is more than 7 days ago.
-- **Always read that date through `getStaleReference` / `getStaleDays` in `lib/reminders.ts`.** Never
-  compute a day count from `last_updated` directly. The reminders badge used to do exactly that
-  while `getStaleJobs` filtered on `applied_at`, so any unrelated edit to a row made a job that had
-  been silent for 45 days display "No update in 1 days". Regression tests cover this in
+
+- **Thresholds are per-status**, in `STALE_THRESHOLDS` (`lib/constants.ts`): `applied` 7 days,
+  `interview` 14, `offer` 7. A status absent from the map never goes stale — `saved` is a bookmark
+  with nobody on the other side, `rejected` is terminal. Interview runs longer because scheduling
+  genuinely takes a week or two; offer is short because an open offer is the most time-sensitive
+  thing on the board.
+- **`isStale(job)` in `lib/reminders.ts` is the only predicate.** `getStaleJobs`, the sidebar badge,
+  the `/reminders` list and the board card's amber flag all call it, so no surface can disagree with
+  another about which jobs qualify. Do not re-implement the comparison anywhere.
+- **Always read the date through `getStaleReference` / `getStaleDays`.** Never compute a day count
+  from `last_updated` directly at a call site. The reminders badge used to do exactly that while
+  `getStaleJobs` filtered on `applied_at`, so any unrelated edit to a row made a job that had been
+  silent for 45 days display "No update in 1 days". Regression tests cover this in
   `__tests__/lib/reminders.test.ts`.
+- **Which clock `getStaleReference` uses depends on the status.** `applied` measures from
+  `applied_at` (falling back to `last_updated`). Every other status measures from
+  `status_changed_at` — when the job entered that stage.
+- **`status_changed_at` is server-owned and only moves on a real transition.** The PATCH route
+  stamps it in `app/api/jobs/[id]/route.ts`, gated on `b.status !== current?.status`, using the same
+  DB read `applyRejectionBookkeeping` needs. It is deliberately **not** in `validatePatchInput`'s
+  allowlist, so a client cannot backdate it to hide a job from its own reminders — verified.
+  Neither of the other two dates works here: `applied_at` dates the application, so an interview
+  scheduled yesterday read as six months silent; `last_updated` moves on *any* edit, so touching the
+  notes on a quiet interview restarted its clock and it silently stopped being flagged. Optimistic
+  updates in `JobsProvider` must set it alongside `status`, or a just-moved card flashes a stale
+  flag until the server row lands. Regression tests cover all of this.
 - Surface stale jobs as a badge count (or status dot when sidebar is collapsed) in the sidebar and a dedicated `/reminders` page.
 - The check runs client-side on dashboard load — no cron job needed for MVP.
 

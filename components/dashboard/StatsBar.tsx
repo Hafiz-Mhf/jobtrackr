@@ -9,10 +9,6 @@ import { stagger, fadeUp } from '@/lib/animations'
 import { cn } from '@/lib/utils'
 import { StatsBarSkeleton } from '@/components/ui/Skeleton'
 
-function pad(n: number) {
-  return n < 10 ? `0${n}` : `${n}`
-}
-
 // Only mounted when the count-up should actually run, so the effect never has
 // to setState synchronously just to fall back to the static figure.
 function CountUp({ value }: { value: number }) {
@@ -33,7 +29,7 @@ function CountUp({ value }: { value: number }) {
     return () => { if (ref.current) cancelAnimationFrame(ref.current) }
   }, [value])
 
-  return <span aria-hidden="true">{pad(display)}</span>
+  return <span aria-hidden="true">{display}</span>
 }
 
 function AnimatedNumber({ value, animate }: { value: number; animate: boolean }) {
@@ -44,11 +40,11 @@ function AnimatedNumber({ value, animate }: { value: number; animate: boolean })
   // Announce the real figure; the ticking digits in between are decoration.
   return (
     <>
-      <span className="sr-only">{pad(value)}</span>
+      <span className="sr-only">{value}</span>
       {shouldAnimate ? (
         <CountUp value={value} />
       ) : (
-        <span aria-hidden="true">{pad(value)}</span>
+        <span aria-hidden="true">{value}</span>
       )}
     </>
   )
@@ -60,34 +56,32 @@ export function StatsBar() {
   if (loading) return <StatsBarSkeleton />
 
   const stats = getWeeklyStats(jobs)
+  // Each label states its own time window. Two of these figures are 7-day
+  // windows and two are all-time (see lib/stats.ts); when every tile just read
+  // "Applied" / "Offers" the only thing separating the two was a secondary line
+  // that restated the number it sat beside — so the board's own "APPLIED 12"
+  // badge and the tile's "5" looked like a contradiction. The window belongs in
+  // the label; the number belongs on its own.
   const tiles = [
     {
-      label: 'Applied',
+      label: 'Applied this week',
       value: stats.appliedThisWeek,
-      subtext: `+${stats.appliedThisWeek} this wk`,
       color: 'bg-[var(--color-applied)]',
-      textColor: 'text-[var(--color-applied)]',
     },
     {
-      label: 'Interviews',
+      label: 'Active interviews',
       value: stats.activeInterviews,
-      subtext: `${stats.activeInterviews} active`,
       color: 'bg-[var(--color-interview)]',
-      textColor: 'text-[var(--color-interview)]',
     },
     {
       label: 'Offers',
       value: stats.offers,
-      subtext: `${stats.offers} total`,
       color: 'bg-[var(--color-offer)]',
-      textColor: 'text-[var(--color-offer)]',
     },
     {
-      label: 'Rejected',
+      label: 'Rejected this week',
       value: stats.rejectedThisWeek,
-      subtext: `${stats.rejectedThisWeek} this wk`,
       color: 'bg-[var(--color-rejected)]',
-      textColor: 'text-[var(--color-rejected)]',
     },
   ]
 
@@ -99,25 +93,25 @@ export function StatsBar() {
       className="grid grid-cols-2 md:grid-cols-4 gap-3 px-6 pt-6"
     >
       {tiles.map((tile) => (
+        // No hover shadow: the tile is not a link and lifting on hover promised
+        // an action it never had.
         <motion.div
           key={tile.label}
           variants={fadeUp}
-          className="relative overflow-hidden bg-surface border border-[var(--color-border)] rounded-xl px-4 py-3 shadow-sm flex flex-col justify-between hover:shadow-md transition-shadow"
+          className="relative overflow-hidden bg-surface border border-[var(--color-border)] rounded-xl px-4 py-3 shadow-sm flex flex-col justify-between"
         >
           <div className="flex items-center gap-1.5">
-            <span className={cn('size-1.5 rounded-full', tile.color)} aria-hidden="true" />
+            <span className={cn('size-1.5 shrink-0 rounded-full', tile.color)} aria-hidden="true" />
             <p className="text-[11px] md:text-xs font-semibold text-brand-muted">
               {tile.label}
             </p>
           </div>
-          <div className="flex items-baseline justify-between mt-1.5">
-            <span className="text-lg md:text-xl font-bold text-brand-text">
-              <AnimatedNumber value={tile.value} animate={!reducedMotion} />
-            </span>
-            <span className={cn('font-mono text-[10px] font-semibold', tile.textColor)}>
-              {tile.subtext}
-            </span>
-          </div>
+          {/* The figure is the only datum left, so it carries the weight. The
+              status colour stays on the dot — as text it fails AA at every one
+              of these five steps (see the token notes in CLAUDE.md). */}
+          <span className="mt-1.5 text-2xl font-bold leading-none text-brand-text">
+            <AnimatedNumber value={tile.value} animate={!reducedMotion} />
+          </span>
         </motion.div>
       ))}
     </motion.div>

@@ -17,6 +17,9 @@ interface PatchJobData {
   source?: string | null
   rejection_reason?: string | null
   rejected_at?: string | null
+  // Server-owned. Deliberately absent from validatePatchInput's allowlist so a
+  // client cannot backdate it and hide a job from its own reminders.
+  status_changed_at?: string
   last_updated: string
 }
 
@@ -176,6 +179,15 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       b.rejection_reason,
       current?.status
     )
+
+    // A real stage change restarts the follow-up clock. Needs the same DB read
+    // as the rejection bookkeeping above, so it lives here rather than in the
+    // pure validator — and it must only fire on an actual transition, or every
+    // unrelated edit would reset the clock, which is the bug this column exists
+    // to fix.
+    if (typeof b.status === 'string' && b.status !== current?.status) {
+      updateData.status_changed_at = new Date().toISOString()
+    }
 
     const { data, error } = await supabase
       .from('jobs')

@@ -77,11 +77,24 @@ export function JobsProvider({ children }: { children: React.ReactNode }) {
     return json.data
   }, [])
 
-  const updateJobStatus = useCallback(async (id: string, status: JobStatus, reason?: string): Promise<void> => {
+  // Shared by a normal status change and by Undo. Returns the job as it stood
+  // before the move so the caller can offer a way back to it.
+  const patchStatus = useCallback(async (id: string, status: JobStatus, reason?: string): Promise<Job | undefined> => {
     let previous: Job[] = []
+    let before: Job | undefined
+    // Both are captured inside the updater, not around it: React runs the
+    // updater during the re-render, so reading `previous` on the line after
+    // setJobs still sees the empty initial value. Only safe to read once the
+    // await below has yielded — which is what the revert path already relied on.
+    // status_changed_at moves with the status here too. The server stamps the
+    // real value, but without it the optimistic row keeps the old stage's clock
+    // and a card moved into Interview can flash an "out of date" flag for the
+    // length of the request.
+    const movedAt = new Date().toISOString()
     setJobs((prev) => {
       previous = prev
-      return prev.map((j) => (j.id === id ? { ...j, status } : j))
+      before = prev.find((j) => j.id === id)
+      return prev.map((j) => (j.id === id ? { ...j, status, status_changed_at: movedAt } : j))
     })
     const res = await fetch(`/api/jobs/${id}`, {
       method: 'PATCH',
@@ -96,8 +109,38 @@ export function JobsProvider({ children }: { children: React.ReactNode }) {
     const json = (await res.json()) as JobResponse
     // Replace with the server row so rejected_at / cleared reason stay in sync.
     setJobs((prev) => prev.map((j) => (j.id === id ? json.data : j)))
-    toast.success(`Moved to ${STATUS_LABELS[status]}`)
+    return before
   }, [])
+
+  const updateJobStatus = useCallback(async (id: string, status: JobStatus, reason?: string): Promise<void> => {
+    const before = await patchStatus(id, status, reason)
+
+    if (!before || before.status === status) {
+      toast.success(`Moved to ${STATUS_LABELS[status]}`)
+      return
+    }
+
+    // A mis-drop is a single gesture and used to be permanent. Undo re-runs the
+    // same PATCH in reverse, restoring the rejection reason when the job is
+    // going back to Rejected. It deliberately offers no Undo of its own, so the
+    // two can't ping-pong.
+    //
+    // Caveat: rejected_at is server-owned and stamped on the transition INTO
+    // rejected, so undoing a move OUT of Rejected re-dates the rejection to
+    // now, and the job counts toward "Rejected this week" again.
+    toast.success(`Moved to ${STATUS_LABELS[status]}`, {
+      action: {
+        label: 'Undo',
+        onClick: () => {
+          void patchStatus(id, before.status, before.rejection_reason ?? undefined)
+            .then(() => toast.success(`Moved back to ${STATUS_LABELS[before.status]}`))
+            .catch(() => {
+              // patchStatus already reverted the optimistic state and toasted.
+            })
+        },
+      },
+    })
+  }, [patchStatus])
 
   const updateJob = useCallback(async (id: string, values: Partial<JobFormValues>): Promise<Job> => {
     const payload = {

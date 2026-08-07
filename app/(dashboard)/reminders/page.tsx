@@ -11,7 +11,7 @@ import { JobIcon } from '@/components/jobs/JobIcon'
 import { RejectionModal } from '@/components/kanban/RejectionModal'
 import { RemindersSkeleton } from '@/components/ui/Skeleton'
 import { getStaleDays } from '@/lib/reminders'
-import { JOB_STATUSES, STATUS_LABELS, STALE_DAYS } from '@/lib/constants'
+import { JOB_STATUSES, STATUS_LABELS, STALE_THRESHOLDS } from '@/lib/constants'
 import type { Job, JobStatus } from '@/types'
 
 export default function RemindersPage() {
@@ -69,8 +69,13 @@ export default function RemindersPage() {
             )}
           </div>
           <p className="text-brand-muted text-sm md:text-base max-w-2xl leading-relaxed">
-            Stay on top of your search. These applications haven&apos;t moved in {STALE_DAYS} or more
-            days. Reaching out for a follow-up can significantly increase your response rate.
+            Stay on top of your search. These have gone quiet long enough to be worth a nudge —{' '}
+            {/* One template literal rather than interpolations woven through JSX
+                text: a text node that both follows an expression and wraps onto
+                a new line gets its first line trimmed, which silently ate the
+                space in "14 once you're interviewing". */}
+            {`${STALE_THRESHOLDS.applied} days after applying, ${STALE_THRESHOLDS.interview} once you're interviewing, ${STALE_THRESHOLDS.offer} on an open offer.`}{' '}
+            Reaching out can significantly increase your response rate.
           </p>
         </div>
       </div>
@@ -90,7 +95,7 @@ export default function RemindersPage() {
           </div>
           <h2 className="text-lg font-semibold text-brand-text">No stale applications</h2>
           <p className="text-sm text-brand-muted mt-1 max-w-xs leading-relaxed">
-            Nice work staying on top of things — nothing has gone quiet for {STALE_DAYS}+ days.
+            Nice work staying on top of things — nothing has gone quiet long enough to chase.
           </p>
         </div>
       ) : (
@@ -193,7 +198,7 @@ export default function RemindersPage() {
               Follow-up Masterclass
             </h2>
             <p className="text-brand-muted text-xs md:text-sm leading-relaxed">
-              A polite nudge after {STALE_DAYS} days shows genuine interest without being pushy. Keep
+              A polite nudge after a week or two shows genuine interest without being pushy. Keep
               it short, restate what drew you to the role, and ask about next steps.
             </p>
           </div>
