@@ -5,6 +5,7 @@ import { toast } from 'sonner'
 import type { Job, JobStatus } from '@/types'
 import type { JobFormValues } from '@/components/jobs/JobForm'
 import { STATUS_LABELS } from '@/lib/constants'
+import { restoreJob, revertJob } from '@/lib/jobs-state'
 
 interface JobsListResponse {
   data: Job[]
@@ -36,6 +37,40 @@ function toTagsArray(tags: JobFormValues['tags']): string[] {
     .filter(Boolean)
 }
 
+/**
+ * Create or update a job, failing with a message worth showing the user.
+ *
+ * The routes answer a rejected write with copy that names the actual problem
+ * ("Description is too long.", "Pick a source from the list."), so it is passed
+ * through untouched — the form has nothing better to say. Only the two failures
+ * that carry no such message, a dead connection and a non-JSON gateway reply,
+ * fall back to generic copy.
+ */
+async function writeJob(url: string, method: 'POST' | 'PATCH', payload: unknown): Promise<Job> {
+  let res: Response
+  try {
+    res = await fetch(url, {
+      method,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    })
+  } catch {
+    throw new Error("Couldn't reach the server. Check your connection and try again.")
+  }
+
+  let json: JobResponse | null = null
+  try {
+    json = (await res.json()) as JobResponse
+  } catch {
+    // A gateway error can answer with HTML, or with nothing at all.
+  }
+
+  if (!res.ok || !json?.data) {
+    throw new Error(json?.error?.trim() || 'Could not save job. Try again.')
+  }
+  return json.data
+}
+
 export function JobsProvider({ children }: { children: React.ReactNode }) {
   const [jobs, setJobs] = useState<Job[]>([])
   const [loading, setLoading] = useState(true)
@@ -65,34 +100,26 @@ export function JobsProvider({ children }: { children: React.ReactNode }) {
       ...values,
       tags: values.tags !== undefined ? toTagsArray(values.tags) : undefined,
     }
-    const res = await fetch('/api/jobs', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-    })
-    const json = (await res.json()) as JobResponse
-    if (!res.ok) throw new Error(json.error)
-    setJobs((prev) => [json.data, ...prev])
-    toast.success(`Job saved — ${json.data.company} · ${json.data.role}`)
-    return json.data
+    const job = await writeJob('/api/jobs', 'POST', payload)
+    setJobs((prev) => [job, ...prev])
+    toast.success(`Job saved — ${job.company} · ${job.role}`)
+    return job
   }, [])
 
   // Shared by a normal status change and by Undo. Returns the job as it stood
   // before the move so the caller can offer a way back to it.
   const patchStatus = useCallback(async (id: string, status: JobStatus, reason?: string): Promise<Job | undefined> => {
-    let previous: Job[] = []
     let before: Job | undefined
-    // Both are captured inside the updater, not around it: React runs the
-    // updater during the re-render, so reading `previous` on the line after
-    // setJobs still sees the empty initial value. Only safe to read once the
-    // await below has yielded — which is what the revert path already relied on.
+    // Captured inside the updater, not around it: React runs the updater during
+    // the re-render, so reading `before` on the line after setJobs still sees
+    // undefined. Only safe to read once the await below has yielded — which is
+    // what the revert path already relied on.
     // status_changed_at moves with the status here too. The server stamps the
     // real value, but without it the optimistic row keeps the old stage's clock
     // and a card moved into Interview can flash an "out of date" flag for the
     // length of the request.
     const movedAt = new Date().toISOString()
     setJobs((prev) => {
-      previous = prev
       before = prev.find((j) => j.id === id)
       return prev.map((j) => (j.id === id ? { ...j, status, status_changed_at: movedAt } : j))
     })
@@ -102,7 +129,7 @@ export function JobsProvider({ children }: { children: React.ReactNode }) {
       body: JSON.stringify(reason !== undefined ? { status, rejection_reason: reason } : { status }),
     })
     if (!res.ok) {
-      setJobs(previous)
+      setJobs((prev) => revertJob(prev, before))
       toast.error("Couldn't update status.", { duration: Infinity })
       throw new Error("Couldn't update status.")
     }
@@ -147,26 +174,23 @@ export function JobsProvider({ children }: { children: React.ReactNode }) {
       ...values,
       tags: values.tags !== undefined ? toTagsArray(values.tags) : undefined,
     }
-    const res = await fetch(`/api/jobs/${id}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-    })
-    const json = (await res.json()) as JobResponse
-    if (!res.ok) throw new Error(json.error)
-    setJobs((prev) => prev.map((j) => (j.id === id ? json.data : j)))
-    return json.data
+    const job = await writeJob(`/api/jobs/${id}`, 'PATCH', payload)
+    setJobs((prev) => prev.map((j) => (j.id === id ? job : j)))
+    return job
   }, [])
 
   const deleteJob = useCallback(async (id: string): Promise<void> => {
-    let previous: Job[] = []
+    let removed: Job | undefined
+    let removedIndex = -1
     setJobs((prev) => {
-      previous = prev
+      removedIndex = prev.findIndex((j) => j.id === id)
+      if (removedIndex === -1) return prev
+      removed = prev[removedIndex]
       return prev.filter((j) => j.id !== id)
     })
     const res = await fetch(`/api/jobs/${id}`, { method: 'DELETE' })
     if (!res.ok) {
-      setJobs(previous)
+      setJobs((prev) => restoreJob(prev, removed, removedIndex))
       toast.error("Couldn't delete job.", { duration: Infinity })
       throw new Error("Couldn't delete job.")
     }

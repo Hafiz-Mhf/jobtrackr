@@ -84,7 +84,7 @@ export function Column({ status, jobs }: Props) {
               </p>
               <Link
                 href={`/jobs/new?status=${status}`}
-                className="mt-1 inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[10px] font-semibold text-accent hover:underline focus-ring"
+                className="mt-1 inline-flex min-h-11 items-center gap-1 rounded-md px-2 text-[10px] font-semibold text-accent hover:underline focus-ring"
               >
                 + Add job
                 <span className="sr-only">to {STATUS_LABELS[status]}</span>

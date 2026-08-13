@@ -18,6 +18,7 @@ import { formatDate, cn } from '@/lib/utils'
 import { JobIcon } from '@/components/jobs/JobIcon'
 import { stagger, fadeUp } from '@/lib/animations'
 import { JobDetailSkeleton } from '@/components/ui/Skeleton'
+import { LoadFailure } from '@/components/ui/LoadFailure'
 import type { JobStatus } from '@/types'
 
 function summaryPreview(description: string, company: string, role: string): string {
@@ -30,7 +31,7 @@ function summaryPreview(description: string, company: string, role: string): str
 
 export default function JobDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params)
-  const { jobs, loading, updateJob, updateJobStatus, deleteJob } = useJobs()
+  const { jobs, loading, error, refresh, updateJob, updateJobStatus, deleteJob } = useJobs()
   const [editing, setEditing] = useState(false)
   const [showFullJd, setShowFullJd] = useState(false)
   const [notes, setNotes] = useState('')
@@ -55,7 +56,47 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
   }, [job])
 
   if (loading) return <JobDetailSkeleton />
-  if (!job) return <div className="p-6 text-sm text-brand-muted">Job not found.</div>
+
+  // A failed fetch and a genuinely missing job both used to land on one bare
+  // "Job not found." line, which told a user whose connection had dropped that
+  // their application was gone.
+  if (error) {
+    return (
+      <div className="p-6 max-w-[var(--content-max)] mx-auto">
+        <LoadFailure
+          as="h1"
+          title="This application didn't load"
+          message={error}
+          onRetry={() => void refresh()}
+        />
+      </div>
+    )
+  }
+
+  // Reachable in normal use: a bookmarked link to a job since deleted, or one
+  // opened on another device. It needs a way back, not a dead end.
+  if (!job) {
+    return (
+      <div className="p-6 max-w-[var(--content-max)] mx-auto">
+        <div className="flex flex-col items-center justify-center text-center py-16 px-6 bg-surface border border-[var(--color-border)] rounded-2xl shadow-card">
+          <div className="size-16 rounded-2xl bg-surface-muted flex items-center justify-center mb-5">
+            <FileText className="size-7 text-brand-muted" aria-hidden="true" />
+          </div>
+          <h1 className="text-lg font-bold text-brand-text mb-1.5">This application isn&apos;t here</h1>
+          <p className="text-sm text-brand-muted max-w-sm leading-relaxed mb-5">
+            It may have been deleted, or the link may be pointing at the wrong job.
+          </p>
+          <Link
+            href="/jobs"
+            className="inline-flex min-h-11 items-center gap-2 bg-accent hover:bg-accent-hover text-white rounded-xl px-5 text-sm font-semibold shadow-md transition-colors focus-ring"
+          >
+            <ArrowLeft className="size-4" aria-hidden="true" />
+            Back to all applications
+          </Link>
+        </div>
+      </div>
+    )
+  }
 
   async function handleUpdate(values: JobFormValues) {
     await updateJob(id, values)

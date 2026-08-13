@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { Briefcase, ChevronRight, Plus, Search, Calendar, RotateCw, X } from 'lucide-react'
+import { Briefcase, ChevronRight, Plus, Search, Calendar, X } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { useJobs } from '@/hooks/useJobs'
 import { usePrefersReducedMotion } from '@/hooks/usePrefersReducedMotion'
@@ -12,6 +12,7 @@ import { cn } from '@/lib/utils'
 import { JobIcon } from '@/components/jobs/JobIcon'
 import { stagger, fadeUp } from '@/lib/animations'
 import { JobListSkeleton } from '@/components/ui/Skeleton'
+import { LoadFailure } from '@/components/ui/LoadFailure'
 import type { Job, JobStatus } from '@/types'
 
 const STATUS_ICON_COLOR: Record<JobStatus, string> = {
@@ -46,21 +47,12 @@ export default function JobsListPage() {
   if (error) {
     return (
       <div className="p-6 max-w-[var(--content-max)] mx-auto">
-        <div
-          role="alert"
-          className="flex flex-col items-center text-center py-16 bg-surface border border-[var(--color-border)] rounded-2xl px-6 shadow-card"
-        >
-          <h1 className="text-lg font-bold text-brand-text mb-1.5">Your applications didn&apos;t load</h1>
-          <p className="text-sm text-brand-muted max-w-sm leading-relaxed mb-5">{error}</p>
-          <button
-            type="button"
-            onClick={() => void refresh()}
-            className="inline-flex items-center gap-2 bg-accent hover:bg-accent-hover text-white rounded-xl px-5 py-2.5 text-sm font-semibold shadow-md transition-colors focus-ring cursor-pointer"
-          >
-            <RotateCw className="size-4" />
-            Try again
-          </button>
-        </div>
+        <LoadFailure
+          as="h1"
+          title="Your applications didn't load"
+          message={error}
+          onRetry={() => void refresh()}
+        />
       </div>
     )
   }
@@ -161,16 +153,18 @@ export default function JobsListPage() {
             placeholder="Search by company, role, or skill..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full border border-[var(--color-border)] rounded-xl pl-10 pr-10 py-2.5 text-sm bg-surface text-brand-text focus:border-accent focus-ring transition-colors placeholder:text-brand-muted [&::-webkit-search-cancel-button]:hidden"
+            // pr-12 clears the 44px clear button parked on the right, so a long
+            // query never runs underneath it.
+            className="w-full min-h-11 border border-[var(--color-border)] rounded-xl pl-10 pr-12 py-2.5 text-sm bg-surface text-brand-text focus:border-accent focus-ring transition-colors placeholder:text-brand-muted [&::-webkit-search-cancel-button]:hidden"
           />
           {searchQuery !== '' && (
             <button
               type="button"
               onClick={() => setSearchQuery('')}
               aria-label="Clear search"
-              className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded-lg text-brand-muted hover:text-brand-text hover:bg-surface-muted transition-colors focus-ring cursor-pointer"
+              className="absolute right-1 top-1/2 -translate-y-1/2 flex size-11 items-center justify-center rounded-lg text-brand-muted hover:text-brand-text hover:bg-surface-muted transition-colors focus-ring cursor-pointer"
             >
-              <X className="size-4" />
+              <X className="size-4" aria-hidden="true" />
             </button>
           )}
         </div>

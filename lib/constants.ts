@@ -28,8 +28,6 @@ export const STATUS_ACCENT: Record<JobStatus, { border: string; dot: string }> =
   rejected: { border: 'border-l-[color:var(--color-rejected)]', dot: 'bg-[var(--color-rejected)]' },
 }
 
-export const STALE_DAYS = 7
-
 /**
  * How long a job may sit in each stage before it counts as needing a follow-up.
  *
@@ -41,7 +39,7 @@ export const STALE_DAYS = 7
  * an open offer is the most time-sensitive thing on the board.
  */
 export const STALE_THRESHOLDS: Partial<Record<JobStatus, number>> = {
-  applied: STALE_DAYS,
+  applied: 7,
   interview: 14,
   offer: 7,
 }

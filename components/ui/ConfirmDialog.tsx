@@ -20,6 +20,14 @@ interface Props {
  * Focus starts on Cancel for destructive actions so that a stray Enter — or an
  * automated click — dismisses rather than destroys. Escape and a backdrop click
  * both cancel; focus returns to whatever opened the dialog.
+ *
+ * Scope: exactly two buttons and no other interactive content. The Tab handling
+ * below is a swap between those two stops, not a general focus trap, so a
+ * dialog that needs a field in it cannot use this. Account deletion is the one
+ * such case — it asks the user to type DELETE — and builds on Base UI's dialog
+ * instead (see DangerZone). Adding a third stop here would mean replacing this
+ * swap with a real trap, which is a change to every destructive flow in the app
+ * rather than a local one.
  */
 export function ConfirmDialog({
   open,

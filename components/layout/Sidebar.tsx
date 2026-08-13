@@ -102,7 +102,7 @@ export function Sidebar({ reminderCount }: Props) {
               type="button"
               onClick={toggle}
               aria-label="Collapse sidebar"
-              className="text-brand-muted hover:text-accent hover:bg-accent-light rounded-md p-1 transition-colors focus-ring cursor-pointer"
+              className="flex min-h-11 min-w-11 items-center justify-center text-brand-muted hover:text-accent hover:bg-accent-light rounded-md transition-colors focus-ring cursor-pointer"
             >
               <PanelLeftClose size={16} />
             </button>
@@ -116,7 +116,7 @@ export function Sidebar({ reminderCount }: Props) {
               type="button"
               onClick={toggle}
               aria-label="Expand sidebar"
-              className="text-brand-muted hover:text-accent hover:bg-accent-light rounded-md p-1 transition-colors focus-ring cursor-pointer"
+              className="flex min-h-11 min-w-11 items-center justify-center text-brand-muted hover:text-accent hover:bg-accent-light rounded-md transition-colors focus-ring cursor-pointer"
             >
               <PanelLeftOpen size={16} />
             </button>
@@ -144,12 +144,23 @@ export function Sidebar({ reminderCount }: Props) {
           >
             <Bell size={16} className="shrink-0" />
             {!collapsed && 'Reminders'}
+            {/* Collapsed, the count is only a coloured dot — so it carries the
+                same text alternative MobileNav gives its badge, or a screen
+                reader hears "Reminders" with nothing to say anything is
+                outstanding. */}
             {reminderCount > 0 &&
               (collapsed ? (
-                <span className="absolute top-1.5 right-2.5 size-2 rounded-full bg-[var(--color-rejected)]" />
+                <>
+                  <span
+                    className="absolute top-1.5 right-2.5 size-2 rounded-full bg-[var(--color-rejected)]"
+                    aria-hidden="true"
+                  />
+                  <span className="sr-only">, {reminderCount} needing follow-up</span>
+                </>
               ) : (
                 <span className="ml-auto bg-[var(--color-rejected)] text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center">
                   {reminderCount}
+                  <span className="sr-only"> needing follow-up</span>
                 </span>
               ))}
           </Link>

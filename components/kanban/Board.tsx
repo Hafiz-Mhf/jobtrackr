@@ -19,7 +19,7 @@ import {
 } from '@dnd-kit/core'
 import { sortableKeyboardCoordinates } from '@dnd-kit/sortable'
 import { motion } from 'framer-motion'
-import { Briefcase, Plus, RotateCw } from 'lucide-react'
+import { Briefcase, Plus } from 'lucide-react'
 import Link from 'next/link'
 import { useJobs } from '@/hooks/useJobs'
 import { usePrefersReducedMotion } from '@/hooks/usePrefersReducedMotion'
@@ -31,6 +31,7 @@ import { Column } from './Column'
 import { JobCard } from './JobCard'
 import { RejectionModal } from './RejectionModal'
 import { BoardSkeleton } from '@/components/ui/Skeleton'
+import { LoadFailure } from '@/components/ui/LoadFailure'
 
 function resolveTargetStatus(overId: string, jobs: Job[]): JobStatus | null {
   if (JOB_STATUSES.includes(overId as JobStatus)) {
@@ -273,20 +274,13 @@ export function Board() {
 
   if (error) {
     return (
-      <div
-        role="alert"
-        className="flex flex-col items-center justify-center text-center py-24 px-6 min-h-[calc(100vh-var(--topbar-height)-110px)]"
-      >
-        <h2 className="text-base font-bold text-brand-text mb-1.5">Your board didn&apos;t load</h2>
-        <p className="text-sm text-brand-muted max-w-sm leading-relaxed mb-5">{error}</p>
-        <button
-          type="button"
-          onClick={() => void refresh()}
-          className="inline-flex items-center gap-2 bg-accent hover:bg-accent-hover text-white rounded-xl px-5 py-2.5 text-sm font-semibold shadow-md hover:shadow-lg hover:shadow-accent/15 active:scale-[0.98] transition-all focus-ring cursor-pointer"
-        >
-          <RotateCw className="size-4" />
-          Try again
-        </button>
+      <div className="px-6 py-6">
+        <LoadFailure
+          title="Your board didn't load"
+          message={error}
+          onRetry={() => void refresh()}
+          className="min-h-[calc(100vh-var(--topbar-height)-190px)]"
+        />
       </div>
     )
   }
