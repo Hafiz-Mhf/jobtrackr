@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { toast } from 'sonner'
 import { AlertDialog } from '@base-ui/react/alert-dialog'
 import { AlertTriangle, Download, Trash2 } from 'lucide-react'
@@ -8,9 +8,19 @@ import { createClient } from '@/lib/supabase/client'
 
 const CONFIRM_WORD = 'DELETE'
 
+/**
+ * Export and account deletion.
+ *
+ * The delete confirmation is the one modal in the app not built on
+ * ConfirmDialog: it contains a text field, and ConfirmDialog's Tab handling is a
+ * two-stop swap between Cancel and Confirm that cannot hold a third stop. Base
+ * UI's dialog — already a dependency — traps arbitrary content properly, so it
+ * owns this one rather than the shared component growing a general focus trap.
+ */
 export function DangerZone() {
   const [open, setOpen] = useState(false)
   const [confirmText, setConfirmText] = useState('')
+  const confirmInputRef = useRef<HTMLInputElement>(null)
   const [deleting, setDeleting] = useState(false)
   const [exporting, setExporting] = useState(false)
 
@@ -115,7 +125,15 @@ export function DangerZone() {
 
           <AlertDialog.Portal>
             <AlertDialog.Backdrop className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 transition-opacity" />
-            <AlertDialog.Popup className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-surface rounded-2xl p-6 w-[calc(100%-2rem)] max-w-sm space-y-4 border border-[var(--color-border)] shadow-xl z-50 focus:outline-none">
+            {/* Focus opens on the confirm field rather than the panel, which
+                suppresses its own outline — otherwise the dialog opens with
+                focus somewhere the user cannot see. Landing on the field is
+                also safe: the delete button stays disabled until DELETE is
+                typed exactly, so no keystroke here can destroy anything. */}
+            <AlertDialog.Popup
+              initialFocus={confirmInputRef}
+              className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-surface rounded-2xl p-6 w-[calc(100%-2rem)] max-w-sm space-y-4 border border-[var(--color-border)] shadow-xl z-50 focus:outline-none"
+            >
               <AlertDialog.Title className="text-base font-bold text-brand-text flex items-center gap-2">
                 <AlertTriangle className="size-5 text-[var(--color-error-text)]" aria-hidden="true" />
                 Delete your account?
@@ -130,6 +148,7 @@ export function DangerZone() {
               </label>
               <input
                 id="delete-confirm"
+                ref={confirmInputRef}
                 type="text"
                 value={confirmText}
                 onChange={(e) => setConfirmText(e.target.value)}

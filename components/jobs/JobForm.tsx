@@ -22,8 +22,12 @@ interface WikidataSearchHit {
   description?: string
 }
 
+// min-h-11 keeps every field on the 44px target baseline the rest of the app
+// holds to. px-3/py-2 alone left these around 37px, and this is the form behind
+// every job the user ever adds or edits. Textareas set their own height via
+// rows, so the floor only ever raises the single-line controls.
 const FIELD_CLASS =
-  'w-full border border-[var(--color-border)] bg-surface rounded-md px-3 py-2 text-sm mt-1 focus:border-accent transition-colors focus-ring'
+  'w-full min-h-11 border border-[var(--color-border)] bg-surface rounded-md px-3 py-2 text-sm mt-1 focus:border-accent transition-colors focus-ring'
 
 const INVALID_FIELD_CLASS = 'border-[var(--color-error-text)]'
 
@@ -248,8 +252,11 @@ export function JobForm({
     try {
       await onSubmit(values)
       addLocal(values.tags.split(',').map((t) => t.trim()).filter(Boolean))
-    } catch {
-      setError('Could not save job. Try again.')
+    } catch (err) {
+      // The provider hands up the route's own copy, which names the actual
+      // problem ("Description is too long."). Collapsing every failure into one
+      // generic line left the user with nothing to act on.
+      setError(err instanceof Error ? err.message : 'Could not save job. Try again.')
     } finally {
       setSaving(false)
     }

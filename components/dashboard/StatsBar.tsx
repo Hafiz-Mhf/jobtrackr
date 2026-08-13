@@ -51,10 +51,14 @@ function AnimatedNumber({ value, animate }: { value: number; animate: boolean })
 }
 
 export function StatsBar() {
-  const { jobs, loading } = useJobs()
+  const { jobs, loading, error } = useJobs()
   const reducedMotion = usePrefersReducedMotion()
   if (loading) return <StatsBarSkeleton />
 
+  // A failed fetch leaves `jobs` empty, which scored every tile as a truthful
+  // looking "0" — directly above the board's own "didn't load" message. The
+  // figures are unknown, not zero, so the tiles say so and leave the retry to
+  // the board below rather than stacking a second error card on the same page.
   const stats = getWeeklyStats(jobs)
   // Each label states its own time window. Two of these figures are 7-day
   // windows and two are all-time (see lib/stats.ts); when every tile just read
@@ -109,8 +113,20 @@ export function StatsBar() {
           {/* The figure is the only datum left, so it carries the weight. The
               status colour stays on the dot — as text it fails AA at every one
               of these five steps (see the token notes in CLAUDE.md). */}
-          <span className="mt-1.5 text-2xl font-bold leading-none text-brand-text">
-            <AnimatedNumber value={tile.value} animate={!reducedMotion} />
+          <span
+            className={cn(
+              'mt-1.5 text-2xl font-bold leading-none',
+              error ? 'text-brand-muted' : 'text-brand-text',
+            )}
+          >
+            {error ? (
+              <>
+                <span aria-hidden="true">&mdash;</span>
+                <span className="sr-only">Unavailable</span>
+              </>
+            ) : (
+              <AnimatedNumber value={tile.value} animate={!reducedMotion} />
+            )}
           </span>
         </motion.div>
       ))}

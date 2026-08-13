@@ -88,8 +88,7 @@ jobtrackr/
 │   │   ├── JobForm.tsx             # Manual entry form
 │   │   ├── ParseInput.tsx          # JD paste → client-side parse
 │   │   ├── StatusBadge.tsx
-│   │   ├── JobIcon.tsx             # Renders the icon for a job (see lib/job-icon.ts)
-│   │   └── ReminderFlag.tsx        # UNUSED — nothing imports it; delete candidate
+│   │   └── JobIcon.tsx             # Renders the icon for a job (see lib/job-icon.ts)
 │   ├── prep/
 │   │   ├── PrepPanel.tsx           # Shows matched questions
 │   │   └── QuestionCard.tsx
@@ -102,6 +101,7 @@ jobtrackr/
 │   │   └── MobileNav.tsx
 │   └── ui/                         # shadcn auto-generated components
 │       ├── ConfirmDialog.tsx       # Shared confirm for destructive actions
+│       ├── LoadFailure.tsx         # Shared "didn't load / try again" state
 │       └── Skeleton.tsx            # Per-page loading skeletons
 ├── lib/
 │   ├── supabase/
@@ -120,6 +120,7 @@ jobtrackr/
 │   ├── interview-questions.ts      # Curated question bank keyed by tech tag
 │   ├── reminders.ts                # Stale job detection + getStaleDays (shared clock)
 │   ├── job-icon.ts                 # Role/tags → icon kind (string, not a component)
+│   ├── jobs-state.ts               # Per-row rollback for failed optimistic writes
 │   ├── validation.ts               # Shared field + avatar file validation
 │   └── utils.ts                    # cn(), formatDate(), etc.
 ├── types/
@@ -351,6 +352,54 @@ Related: **do not describe any feature as AI.** There is no model in this
 project. The login page shipped "Instant AI Parsing" directly above copy
 promising "no AI subscription required", and the add-job page claimed "Our AI
 will automatically extract...". Both are gone; do not reintroduce them.
+
+### A failed load is not an empty state
+
+Every surface reading from `JobsProvider` must branch on `error` before it
+branches on "no rows". Skipping it is not a missing nicety — the page asserts
+something false. The reminders page told users "No stale applications — nice
+work staying on top of things" whenever the fetch failed, and `StatsBar` scored
+all four tiles "0" directly above the board's own "didn't load" message.
+
+- **Use `components/ui/LoadFailure.tsx`** for a surface whose whole content
+  failed. `as="h1"` when it replaces a page, the default `h2` inside a page that
+  still renders its own heading.
+- **Don't stack two error cards in one viewport.** `StatsBar` sits above the
+  board, which already offers the retry, so its tiles render "—" and leave the
+  affordance to the board.
+- **Distinguish "failed to load" from "not found".** Job detail collapsed both
+  into one bare "Job not found." line, which told a user whose connection had
+  dropped that their application was gone.
+
+### Optimistic writes roll back one row, never the whole array
+
+`lib/jobs-state.ts` owns this. A snapshot of the entire array taken before a
+request also predates every *other* mutation that lands while it is in flight,
+so restoring it silently discards concurrent, already-confirmed changes — drag
+card A, drag card B, A's PATCH fails, and B's confirmed move disappears from the
+board until the next refresh. `revertJob` restores only the failed row and
+`restoreJob` reinserts a failed delete at its original index. Covered by
+`__tests__/lib/jobs-state.test.ts`.
+
+Related: **the API's own validation copy is the user-facing message.** The
+routes answer a rejected write with text that names the problem ("Description is
+too long.", "Pick a source from the list."), and `writeJob` in `JobsProvider`
+passes it through. `JobForm` shows `err.message`; it used to swallow every
+failure into one generic "Could not save job. Try again.", leaving the user
+nothing to act on. Only a dead connection and a non-JSON gateway reply — which
+carry no such message — fall back to generic copy.
+
+### Two modal primitives, on purpose
+
+`ConfirmDialog` handles Tab as a swap between exactly two stops, Cancel and
+Confirm. That is right for a fixed two-button confirm and structurally cannot
+hold a dialog containing a field. Account deletion needs a typed confirmation,
+so `DangerZone` builds on Base UI's dialog, which traps arbitrary content. Do
+not "consolidate" these by adding a third stop to `ConfirmDialog`'s swap — that
+means replacing it with a real focus trap, which is a change to every
+destructive flow in the app. Base UI dialogs must set `initialFocus` at a real
+control; the popup suppresses its own outline, so focus landing there is
+invisible.
 
 ### Semantic colour tokens
 

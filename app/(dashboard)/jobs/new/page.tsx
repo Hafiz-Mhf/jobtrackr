@@ -80,7 +80,7 @@ function NewJobFormContent() {
                 <button
                   type="button"
                   onClick={() => setShowForm(false)}
-                  className="rounded-md px-1.5 py-1 text-xs font-semibold text-accent hover:underline focus-ring cursor-pointer"
+                  className="inline-flex min-h-11 items-center rounded-md px-2 text-xs font-semibold text-accent hover:underline focus-ring cursor-pointer"
                 >
                   Back to description
                 </button>

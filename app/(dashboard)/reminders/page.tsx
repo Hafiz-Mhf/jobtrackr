@@ -10,12 +10,13 @@ import { StatusBadge } from '@/components/jobs/StatusBadge'
 import { JobIcon } from '@/components/jobs/JobIcon'
 import { RejectionModal } from '@/components/kanban/RejectionModal'
 import { RemindersSkeleton } from '@/components/ui/Skeleton'
+import { LoadFailure } from '@/components/ui/LoadFailure'
 import { getStaleDays } from '@/lib/reminders'
 import { JOB_STATUSES, STATUS_LABELS, STALE_THRESHOLDS } from '@/lib/constants'
 import type { Job, JobStatus } from '@/types'
 
 export default function RemindersPage() {
-  const { jobs, loading, updateJobStatus } = useJobs()
+  const { jobs, loading, error, refresh, updateJobStatus } = useJobs()
   const { staleJobs } = useReminders(jobs)
   // Hiding is deliberately session-only — see hideReminder, which says so in
   // the toast rather than letting a trash-can icon imply a permanent delete.
@@ -54,6 +55,22 @@ export default function RemindersPage() {
   }
 
   if (loading) return <RemindersSkeleton />
+
+  // Without this the failed fetch left `jobs` empty and the page rendered its
+  // "No stale applications — nice work staying on top of things" state, telling
+  // the user their pipeline was clear when it had simply never loaded.
+  if (error) {
+    return (
+      <div className="p-6 max-w-[var(--content-max)] mx-auto">
+        <LoadFailure
+          as="h1"
+          title="Your reminders didn't load"
+          message={error}
+          onRetry={() => void refresh()}
+        />
+      </div>
+    )
+  }
 
   return (
     <div className="p-6 max-w-[var(--content-max)] mx-auto flex flex-col gap-8">
